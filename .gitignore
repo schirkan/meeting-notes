@@ -1,0 +1,27 @@
+# OS / Editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Environment / Secrets
+.env
+.env.*
+!.env.example
+
+# Node / Build outputs (future PoC app)
+node_modules/
+dist/
+build/
+coverage/
+
+# Electron / tooling artifacts
+out/
+*.tsbuildinfo
