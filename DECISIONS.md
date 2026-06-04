@@ -1,0 +1,19 @@
+# Decisions — Meeting Notes
+
+| Datum | Entscheidung | Begründung |
+|-------|--------------|------------|
+| 02.06.2026 | Zielplattform für den PoC ist ausschließlich Windows 11; Testhardware ist Laptop mit integriertem Mikrofon; Bluetooth-Headsets sind out of Scope, kabelgebundene Headsets müssen unterstützt werden; Transkriptionssprache ist durch den Anwender einstellbar; Build bleibt unsigniert und portable. | Fokus auf schnellen, robusten PoC mit klar begrenzter Hardware-/OS-Varianz und einfacher Verteilung ohne Signierungsaufwand. |
+| 02.06.2026 | Speaker-Loopback wird als **Anforderung** beibehalten, die konkrete technische Umsetzung wird jedoch erst nach Auswahl des Audio-/Transkriptions-Stacks final entschieden. | Die Verfügbarkeit von Systemaudio-Capture hängt in der Praxis von den konkret gewählten Paketen/Bindings (und deren Windows-Unterstützung) ab; daher ist die Implementierungsentscheidung aktuell bewusst offen. |
+| 02.06.2026 | Transkriptions-API ist Azure Speech (MSDN-Account vorhanden). | Azure Speech bietet die benötigten Features für den PoC und ist für den Nutzer bereits verfügbar. |
+| 02.06.2026 | Darstellung der Transkripte soll getrennt nach Quellen erfolgen und idealerweise mehrere Sprecher differenzieren (Diarization-Ziel). | Höhere Nutzbarkeit der Meeting-Notizen durch klare Sprecher-/Quellenzuordnung. |
+| 02.06.2026 | Wenn Speaker-Loopback ausfällt, wird die Aufnahme blockiert (kein degradiertes Nur-Mikrofon-Verhalten). | PoC-Ziel erfordert explizit die gleichzeitige Erfassung von Mic und Speaker-Output. |
+| 02.06.2026 | Ausgabe erfolgt in der React-Oberfläche; Export zunächst nicht als Datei, sondern als TXT per Copy-to-Clipboard. | Minimaler PoC-Umfang mit schneller Bedienung ohne zusätzlichen Dateiexport-Workflow. |
+| 02.06.2026 | Standardansatz ist eine getrennte Verarbeitung von Mic- und Speaker-Audio (zwei Pipelines, parallele API-Requests); eine kombinierte Verarbeitung darf optional untersucht werden, falls das gewählte Paket dafür Vorteile bietet. | Getrennte Pipelines verbessern Quellenklarheit; kombinierte Verarbeitung bleibt als mögliche Optimierung offen. |
+| 02.06.2026 | Mehrsprecher-Differenzierung (Diarization) ist für den PoC Nice-to-have, nicht hartes Muss. | PoC bleibt realistisch umsetzbar, auch wenn Diarization-Qualität variiert. |
+| 02.06.2026 | Bevorzugter Modus ist Echtzeit-Streaming; Chunking ist als zulässiger Fallback/Alternative erlaubt. | Streaming ist für UX besser, Chunking sichert Umsetzbarkeit bei technischen Einschränkungen. |
+| 02.06.2026 | Spracheinstellung wird persistiert und beim nächsten App-Start wiederverwendet. | Reduziert Bedienaufwand im täglichen Einsatz. |
+| 02.06.2026 | TXT-Export kopiert immer das vollständige Transkript inklusive Sprecher/Quelle, Uhrzeit und Text (sofern verfügbar). | Gewünschtes einheitliches Exportverhalten für PoC-Workflow. |
+| 02.06.2026 | Latenzziel für PoC: neue Transkriptsegmente sollen innerhalb von < 5 Sekunden in der UI erscheinen. | Definiert einen klaren, messbaren UX-Zielwert für die Spezifikation. |
+| 02.06.2026 | Zeitstempel im Transkript verwenden deutsches Datums-/Zeitformat. | Konsistenz mit Nutzerpräferenz und besserer Lesbarkeit. |
+| 02.06.2026 | Azure-API-Konfiguration wird über eine fest verdrahtete JSON-Datei gesteuert; in der UI sind nur Sprachauswahl und Device-Auswahl (falls nicht Default) änderbar. | PoC bleibt einfach und kontrollierbar, während notwendige Nutzeroptionen erhalten bleiben. |
+| 03.06.2026 | Architektur-Entscheidung (Variante B): C# Capture-Service als Sidecar am Electron Main Process; Azure Speech SDK läuft im Main Process; Transkript-Streaming ins WebUI erfolgt per IPC. | Trennt hardwarenahes Audio-Capture von UI-Logik, hält Renderer schlank und reduziert Integrationsrisiko bei Windows-Loopback. |
