@@ -18,6 +18,20 @@ Wichtige Dokumente im Repository:
 - `specs/` – Spezifikationen pro Task
 - `context/` – Hintergrundrecherche (z. B. Azure Speech SDK)
 
+## MVP-Aufteilung
+- **MVP 1 (aktuell in Umsetzung):** Electron-App startbar, IPC mit Mock-Backend, React-UI mit Live-Anzeige.
+- **MVP 2:** C#-Sidecar + Azure Speech SDK anbinden und Mock ersetzen.
+
+Details: `MVP-PLAN.md`
+
+## Lokaler Start (MVP 1)
+- `npm install`
+- `npm run dev`
+
+Checks:
+- `npm run typecheck`
+- `npm run build`
+
 ## Hinweise
 - Dieses Repository enthält primär Planung, Spezifikation und Kontextmaterial.
 - Implementierungsartefakte der PoC-App werden schrittweise ergänzt.

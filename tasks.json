@@ -3,7 +3,7 @@
     {
       "id": "T-100",
       "title": "PoC-Implementierung planen und Grundstruktur festziehen",
-      "status": "open",
+      "status": "in-progress",
       "priority": "high",
       "subtaskIds": [
         "T-101",
@@ -15,7 +15,7 @@
     {
       "id": "T-101",
       "title": "Projektstruktur für Electron Main, Renderer (React) und Shared-Types anlegen",
-      "status": "open",
+      "status": "review",
       "priority": "high",
       "parentId": "T-100",
       "specFile": "specs/T-101.md"
@@ -23,7 +23,7 @@
     {
       "id": "T-102",
       "title": "IPC-Vertrag definieren (Start/Stop, Status, Transcript-Events, Fehlercodes)",
-      "status": "open",
+      "status": "in-progress",
       "priority": "high",
       "parentId": "T-100",
       "specFile": "specs/T-102.md"

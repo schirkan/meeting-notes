@@ -8,6 +8,8 @@
 - 02.06.2026: Technische Paketanalyse für Azure Speech SDK (JS/NPM) inkl. PoC-relevanter Methoden und Codebeispiele dokumentiert.
 - 03.06.2026: Variante-B-Architektur konkretisiert und dokumentiert (C#-Capture-Sidecar am Main Process, Speech SDK im Main, IPC-Streaming der Transkripte ins WebUI).
 - 03.06.2026: Specs für alle PoC-Tasks im Ordner `specs/` detailliert ausgefüllt und mit Tasks verknüpft.
+- 05.06.2026: Umsetzung in MVP 1 (Electron + IPC + Mock + UI) und MVP 2 (C# Sidecar + Azure Speech) aufgeteilt und dokumentiert.
+- 05.06.2026: MVP-1-Implementierung gestartet; Grundgerüst (Electron-Vite), IPC-Kanäle, Mock-Transkriptservice und erste React-Anbindung umgesetzt.
 
 ## Scope
 - Notizen aus Meetings sammeln
@@ -30,3 +32,5 @@
 - 03.06.2026, 17:08 UTC: Spezifikation ergänzt und Entscheidung festgehalten: C#-Capture als Sidecar am Electron Main Process, Azure Speech SDK im Main Process, Transkript-Streaming per IPC ins WebUI.
 - 03.06.2026, 17:13 UTC: Umsetzungs-Backlog für den PoC erstellt (27 Tasks inkl. Parent-/Subtask-Struktur) und in `tasks.json` hinterlegt.
 - 03.06.2026, 20:16 UTC: Spezifikationsdokumente für alle 27 Tasks im Ordner `specs/` ausgearbeitet (Goal, Done-When, Approach, Abhängigkeiten) und `specFile`-Referenzen in `tasks.json` ergänzt.
+- 05.06.2026, 09:10 UTC: MVP-Aufteilung gemäß Nutzerpriorität dokumentiert (erst Basics + IPC mit Mock + React-UI, danach C#/Speech in MVP 2) und in DECISIONS/SPEC ergänzt.
+- 05.06.2026, 09:10 UTC: Implementierung von MVP 1 begonnen: Electron/React-Projektstruktur angelegt, IPC-Vertrag als Shared-Type eingeführt, Mock-Transcript-Service eingebaut, UI-Start/Stop + Live-Liste verdrahtet, Build/Typecheck erfolgreich.

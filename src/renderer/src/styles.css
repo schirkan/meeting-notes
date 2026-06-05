@@ -1,0 +1,101 @@
+:root {
+  font-family: Inter, Segoe UI, Arial, sans-serif;
+  color-scheme: light dark;
+}
+
+body {
+  margin: 0;
+  background: #0f172a;
+  color: #e2e8f0;
+}
+
+.container {
+  max-width: 940px;
+  margin: 0 auto;
+  padding: 24px;
+}
+
+header h1 {
+  margin-bottom: 4px;
+}
+
+header p {
+  margin-top: 0;
+  color: #94a3b8;
+}
+
+.controls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 18px 0;
+}
+
+button {
+  border: 0;
+  border-radius: 8px;
+  padding: 8px 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.badge {
+  background: #1e293b;
+  border-radius: 999px;
+  padding: 6px 12px;
+  font-size: 0.9rem;
+}
+
+.error {
+  border: 1px solid #ef4444;
+  background: #7f1d1d;
+  padding: 10px;
+  border-radius: 8px;
+  margin-bottom: 12px;
+}
+
+.panel {
+  border: 1px solid #334155;
+  border-radius: 12px;
+  padding: 16px;
+  background: #111827;
+}
+
+.empty {
+  color: #94a3b8;
+}
+
+ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 10px;
+}
+
+.segment {
+  display: grid;
+  gap: 4px;
+  border-left: 4px solid #64748b;
+  background: #1e293b;
+  padding: 10px;
+  border-radius: 6px;
+}
+
+.segment.mic {
+  border-color: #22c55e;
+}
+
+.segment.speaker {
+  border-color: #3b82f6;
+}
+
+.meta {
+  color: #93c5fd;
+  font-size: 0.82rem;
+}

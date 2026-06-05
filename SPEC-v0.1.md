@@ -60,7 +60,21 @@ Ein portabler, unsignierter Desktop-PoC (Node.js + Electron + React), der parall
 - Bluetooth-Audio-Support
 - Produktionsreife Betriebs-/Monitoring-Features
 
-## 9. Offene Entscheidungen für v0.2
+## 9. MVP-Rollout (festgelegt am 05.06.2026)
+### MVP 1
+- Electron-Anwendung startet lokal (Main + Renderer)
+- IPC-Vertrag steht und ist in Main/Preload/Renderer verdrahtet
+- Mock-Service liefert zufällige Dummy-Transkriptsegmente
+- React-UI zeigt Status + Live-Transkript über IPC
+- Manuelle Zwischenprüfungen sind Bestandteil des Flows
+
+### MVP 2
+- C#-Capture-Sidecar anbinden
+- Azure Speech SDK im Main auf reale Audioquellen schalten
+- Loopback-Blocker-Regel mit realen Fehlercodes finalisieren
+- UI/Export auf reale Daten und finale Fehlerpfade härten
+
+## 10. Offene Entscheidungen für v0.2
 1. Konkretes Windows-11-Audio-/Capture-Paket für robustes Loopback
 2. Optional: expliziter Experimentpfad "kombinierte Verarbeitung"
 3. Optional: Kosten-/Nutzungsgrenzen für API-Tests
