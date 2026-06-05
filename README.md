@@ -24,11 +24,21 @@ Wichtige Dokumente im Repository:
 
 Details: `MVP-PLAN.md`
 
+## Node-Version (robustes Setup)
+- Standard: `.nvmrc` = `22` (LTS-Linie, empfohlen)
+- Erlaubte Versionen (`engines` + `.npmrc engine-strict=true`):
+  - `>=22.12.0 <23`
+  - `>=24.0.0 <24.16.0`
+
+Warum: Für `24.16.0+` gibt es aktuell ein bekanntes Problem beim Electron-Binary-Install (unvollständige Extraction).
+
 ## Lokaler Start (MVP 1)
+- `nvm use`
 - `npm install`
 - `npm run dev`
 
 Checks:
+- `npm run check:node`
 - `npm run typecheck`
 - `npm run build`
 
