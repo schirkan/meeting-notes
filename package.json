@@ -11,7 +11,8 @@
     "build": "electron-vite build",
     "preview": "electron-vite preview",
     "typecheck": "tsc --noEmit",
-    "check:node": "node scripts/check-node.mjs"
+    "check:node": "node scripts/check-node.mjs",
+    "test:smoke": "node scripts/test-smoke-electron.mjs"
   },
   "dependencies": {
     "react": "^18.3.1",
@@ -27,6 +28,7 @@
     "@vitejs/plugin-react": "^4.3.1",
     "electron": "^31.1.0",
     "electron-vite": "^2.3.0",
+    "playwright": "^1.55.0",
     "typescript": "^5.5.4",
     "vite": "^5.4.2"
   }

@@ -48,6 +48,7 @@ Checks:
 - `npm run check:node`
 - `npm run typecheck`
 - `npm run build`
+- `npm run test:smoke` (reproduzierbarer Electron-Smoketest: UI lädt, IPC-Bridge verfügbar, Mock-Flow startet)
 
 ## Hinweise
 - Dieses Repository enthält primär Planung, Spezifikation und Kontextmaterial.
