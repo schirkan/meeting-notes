@@ -40,3 +40,4 @@
 - 05.06.2026, 11:28 UTC: Relevante Dokumentation erweitert (README/DECISIONS/MVP-PLAN/TROUBLESHOOTING); Upstream-Status verifiziert: Node-Issue #63487 und Electron-Issue #51619 weiterhin offen, in Node-Releases aktuell kein neuer 24.x-Fixrelease > 24.16.0 sichtbar.
 - 05.06.2026, 16:30 UTC: Node-22-Testlauf abgeschlossen (Sample + `meeting-notes` jeweils mit gelöschtem `node_modules` neu installiert und erfolgreich gestartet); Lockfile in `meeting-notes` nach Neuinstallation aktualisiert und committed.
 - 05.06.2026, 17:33 UTC: Debug-Fix für nicht ladende Seite umgesetzt: falscher Preload-Pfad (`index.js`) auf tatsächliches Build-Artefakt (`index.mjs`) korrigiert; Typecheck/Build und Dev-Start erneut erfolgreich.
+- 05.06.2026, 17:54 UTC: Alternativer Debug-Ansatz für Dev-Start ergänzt (Renderer-Fehlerausgabe via `webContents.debugger`/CDP ins Terminal) und Ladeschaden final behoben (`sandbox: false` für Preload-Ausführung mit aktuellem ESM-Output).
