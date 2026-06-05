@@ -14,6 +14,7 @@ Früh ein lauffähiges Ende-zu-Ende-Skelett bereitstellen (Electron Main ↔ IPC
 4. React-UI bindet IPC an und zeigt Live-Daten
 
 ### Manuelle Zwischenprüfungen
+- Checkpoint 0: `npm run check:node` bestätigt gültige Node-Version (empfohlen via `nvm use` auf 22).
 - Checkpoint 1: `npm run dev` startet Fenster ohne Fehler.
 - Checkpoint 2: Start/Stop im UI steuert den Mock-Service über IPC.
 - Checkpoint 3: Live-Liste zeigt zufällige Mic/Speaker-Segmente mit Zeitstempel.

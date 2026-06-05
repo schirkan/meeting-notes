@@ -32,6 +32,13 @@ Details: `MVP-PLAN.md`
 
 Warum: Für `24.16.0+` gibt es aktuell ein bekanntes Problem beim Electron-Binary-Install (unvollständige Extraction).
 
+Statuscheck (05.06.2026):
+- Node v24.16.0 ist der neueste verfügbare 24er-Release (laut GitHub Releases)
+- Es liegt noch kein bestätigter Fix-Release in 24.x vor
+- Bis dahin bleibt Node 22 LTS der empfohlene Standard
+
+Details und Downgrade-Schritte: `TROUBLESHOOTING.md`
+
 ## Lokaler Start (MVP 1)
 - `nvm use`
 - `npm install`

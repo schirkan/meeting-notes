@@ -11,6 +11,7 @@
 - 05.06.2026: Umsetzung in MVP 1 (Electron + IPC + Mock + UI) und MVP 2 (C# Sidecar + Azure Speech) aufgeteilt und dokumentiert.
 - 05.06.2026: MVP-1-Implementierung gestartet; Grundgerüst (Electron-Vite), IPC-Kanäle, Mock-Transkriptservice und erste React-Anbindung umgesetzt.
 - 05.06.2026: Node-Setup gehärtet (LTS-Default via `.nvmrc`, Engine-Range + `engine-strict`, Version-Check-Skript) aufgrund reproduziertem Electron-Installproblem unter Node 24.16.x.
+- 05.06.2026: Troubleshooting-Dokument ergänzt (`TROUBLESHOOTING.md`) inkl. Downgrade-Pfad und Upstream-Referenzen; Statusprüfung auf neuere 24er-Node-Version durchgeführt.
 
 ## Scope
 - Notizen aus Meetings sammeln
@@ -36,3 +37,4 @@
 - 05.06.2026, 09:10 UTC: MVP-Aufteilung gemäß Nutzerpriorität dokumentiert (erst Basics + IPC mit Mock + React-UI, danach C#/Speech in MVP 2) und in DECISIONS/SPEC ergänzt.
 - 05.06.2026, 09:10 UTC: Implementierung von MVP 1 begonnen: Electron/React-Projektstruktur angelegt, IPC-Vertrag als Shared-Type eingeführt, Mock-Transcript-Service eingebaut, UI-Start/Stop + Live-Liste verdrahtet, Build/Typecheck erfolgreich.
 - 05.06.2026, 11:19 UTC: Root-Cause-Check mit frischem Hello-World-Electron-Vite-Projekt durchgeführt (gleicher Fehler reproduziert), anschließend Node-Version-Guardrails im Projekt ergänzt (`.nvmrc`, `.npmrc`, `engines`, `scripts/check-node.mjs`, README-Update).
+- 05.06.2026, 11:28 UTC: Relevante Dokumentation erweitert (README/DECISIONS/MVP-PLAN/TROUBLESHOOTING); Upstream-Status verifiziert: Node-Issue #63487 und Electron-Issue #51619 weiterhin offen, in Node-Releases aktuell kein neuer 24.x-Fixrelease > 24.16.0 sichtbar.

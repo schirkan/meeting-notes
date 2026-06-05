@@ -54,13 +54,20 @@ Ein portabler, unsignierter Desktop-PoC (Node.js + Electron + React), der parall
 - Exportinhalt: Sprecher/Quelle, Uhrzeit, Text (sofern verfügbar)
 - Zeitformat: deutsches Datums-/Zeitformat
 
-## 8. Nicht-Ziele (PoC)
+## 8. Entwicklungsumgebung (Stabilitätsvorgabe)
+- Standard für lokale Entwicklung: Node 22 LTS (`.nvmrc`)
+- Zulässige Node-Versionen im Projekt:
+  - `>=22.12.0 <23`
+  - `>=24.0.0 <24.16.0`
+- Hintergrund: Bekannter Electron-Installfehler unter Node 24.16.0+ (unvollständige Binary-Extraction); bis bestätigtem Upstream-Fix kein Einsatz von 24.16.0+
+
+## 9. Nicht-Ziele (PoC)
 - Code-Signing
 - Plattformübergreifende Unterstützung (macOS/Linux)
 - Bluetooth-Audio-Support
 - Produktionsreife Betriebs-/Monitoring-Features
 
-## 9. MVP-Rollout (festgelegt am 05.06.2026)
+## 10. MVP-Rollout (festgelegt am 05.06.2026)
 ### MVP 1
 - Electron-Anwendung startet lokal (Main + Renderer)
 - IPC-Vertrag steht und ist in Main/Preload/Renderer verdrahtet
@@ -74,7 +81,7 @@ Ein portabler, unsignierter Desktop-PoC (Node.js + Electron + React), der parall
 - Loopback-Blocker-Regel mit realen Fehlercodes finalisieren
 - UI/Export auf reale Daten und finale Fehlerpfade härten
 
-## 10. Offene Entscheidungen für v0.2
+## 11. Offene Entscheidungen für v0.2
 1. Konkretes Windows-11-Audio-/Capture-Paket für robustes Loopback
 2. Optional: expliziter Experimentpfad "kombinierte Verarbeitung"
 3. Optional: Kosten-/Nutzungsgrenzen für API-Tests
