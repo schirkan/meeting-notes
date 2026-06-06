@@ -1,7 +1,7 @@
 # T-100: PoC-Implementierung planen und Grundstruktur festziehen
 
 ## Kontext
-Status: open
+Status: review
 Priorität: high
 Subtasks: T-101, T-102, T-103
 Abhängigkeiten: -

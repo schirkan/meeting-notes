@@ -12,9 +12,13 @@
     "preview": "electron-vite preview",
     "typecheck": "tsc --noEmit",
     "check:node": "node scripts/check-node.mjs",
-    "test:smoke": "node scripts/test-smoke-electron.mjs"
+    "test:smoke": "node scripts/test-smoke-electron.mjs",
+    "measure:latency": "node scripts/measure-latency.mjs",
+    "build:sidecar": "dotnet build sidecar/MeetingNotes.Sidecar.csproj -c Release",
+    "dist:portable": "npm run build && electron-packager . meeting-notes --platform=win32 --arch=x64 --out=dist/portable --overwrite"
   },
   "dependencies": {
+    "microsoft-cognitiveservices-speech-sdk": "^1.44.1",
     "react": "^18.3.1",
     "react-dom": "^18.3.1"
   },
@@ -27,6 +31,7 @@
     "@types/react-dom": "^18.3.0",
     "@vitejs/plugin-react": "^4.3.1",
     "electron": "^31.1.0",
+    "electron-packager": "^17.1.2",
     "electron-vite": "^2.3.0",
     "playwright": "^1.55.0",
     "typescript": "^5.5.4",

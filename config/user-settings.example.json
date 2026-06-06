@@ -1,5 +1,6 @@
 {
   "language": "de-DE",
+  "runtimeMode": "mock",
   "devices": {
     "micId": null,
     "speakerLoopbackId": null

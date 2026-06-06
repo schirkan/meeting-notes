@@ -1,18 +1,29 @@
-import { app, BrowserWindow, ipcMain } from 'electron'
+import { app, BrowserWindow, clipboard, ipcMain } from 'electron'
 import { join } from 'node:path'
-import { MockTranscriptService } from './mock-transcript-service'
 import {
   TRANSCRIPT_CONTRACT_VERSION,
+  type AudioDeviceSnapshot,
   type TranscriptError,
+  type TranscriptSegment,
   type TranscriptStatus
 } from '@shared/transcript-contract'
+import { MockTranscriptService } from './mock-transcript-service'
+import { toMockTranscriptSegment, type DecodedFrame } from './frame-protocol'
+import { SidecarSession, listSidecarDevices } from './sidecar-manager'
+import { AzureTranscriptionService } from './azure-transcription-service'
+import { loadFixedAzureConfig, loadUserSettings, saveUserSettings } from './settings-store'
 
 const mockService = new MockTranscriptService()
+const sidecarSession = new SidecarSession()
+
 let mainWindow: BrowserWindow | null = null
+let azureService: AzureTranscriptionService | null = null
+let devicesCache: AudioDeviceSnapshot = { inputs: [], outputs: [], fetchedAtIso: new Date(0).toISOString() }
+let userSettings = await loadUserSettings()
 
 const status: TranscriptStatus = {
   running: false,
-  mode: 'mock',
+  mode: userSettings.runtimeMode,
   contractVersion: TRANSCRIPT_CONTRACT_VERSION
 }
 
@@ -21,66 +32,39 @@ function broadcast(channel: string, payload: unknown): void {
   mainWindow.webContents.send(channel, payload)
 }
 
+function emitError(error: TranscriptError): void {
+  broadcast('transcript:error', error)
+}
+
+async function refreshDevices(): Promise<AudioDeviceSnapshot> {
+  try {
+    devicesCache = await listSidecarDevices()
+    return devicesCache
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error)
+    emitError({ code: 'SIDECAR_UNAVAILABLE', message })
+    return devicesCache
+  }
+}
+
 function attachRendererDiagnostics(win: BrowserWindow): void {
   if (!process.env.ELECTRON_RENDERER_URL) return
 
   const wc = win.webContents
 
   try {
-    if (!wc.debugger.isAttached()) {
-      wc.debugger.attach('1.3')
-    }
-
-    wc.debugger.on('message', (_event, method, params) => {
-      if (method === 'Runtime.consoleAPICalled') {
-        const level = params?.type ?? 'log'
-        const values = (params?.args ?? [])
-          .map((arg: { value?: unknown; description?: string }) => {
-            if (arg?.value !== undefined) return String(arg.value)
-            if (arg?.description) return arg.description
-            return '[unserializable]'
-          })
-          .join(' ')
-
-        console.log(`[renderer:${level}] ${values}`)
-      }
-
-      if (method === 'Runtime.exceptionThrown') {
-        const text = params?.exceptionDetails?.text ?? 'Unbekannte Exception'
-        const line = params?.exceptionDetails?.lineNumber
-        const column = params?.exceptionDetails?.columnNumber
-        console.error(`[renderer:exception] ${text} @ ${line}:${column}`)
-      }
-
-      if (method === 'Log.entryAdded') {
-        const entry = params?.entry
-        if (!entry) return
-        const level = entry.level ?? 'info'
-        const text = entry.text ?? ''
-        console.log(`[renderer:log:${level}] ${text}`)
-      }
-    })
-
+    if (!wc.debugger.isAttached()) wc.debugger.attach('1.3')
     void wc.debugger.sendCommand('Runtime.enable')
     void wc.debugger.sendCommand('Log.enable')
-  } catch (error) {
-    const message = error instanceof Error ? error.message : String(error)
-    console.warn(`[diagnostics] Debugger-Bridge nicht aktiv: ${message}`)
+  } catch {
+    // ignore diagnostics errors in dev
   }
-
-  wc.on('did-fail-load', (_event, code, description, validatedUrl) => {
-    console.error(`[renderer:did-fail-load] code=${code} url=${validatedUrl} msg=${description}`)
-  })
-
-  wc.on('render-process-gone', (_event, details) => {
-    console.error(`[renderer:gone] reason=${details.reason} exitCode=${details.exitCode}`)
-  })
 }
 
 function createWindow(): void {
   mainWindow = new BrowserWindow({
-    width: 1200,
-    height: 800,
+    width: 1280,
+    height: 860,
     webPreferences: {
       preload: join(__dirname, '../preload/index.mjs'),
       contextIsolation: true,
@@ -91,51 +75,154 @@ function createWindow(): void {
 
   attachRendererDiagnostics(mainWindow)
 
+  if (process.env.ELECTRON_RENDERER_URL) {
+    void mainWindow.loadURL(process.env.ELECTRON_RENDERER_URL)
+  } else {
+    void mainWindow.loadFile(join(__dirname, '../renderer/index.html'))
+  }
+
   mainWindow.on('closed', () => {
     mainWindow = null
   })
-
-  if (process.env.ELECTRON_RENDERER_URL) {
-    mainWindow.loadURL(process.env.ELECTRON_RENDERER_URL)
-  } else {
-    mainWindow.loadFile(join(__dirname, '../renderer/index.html'))
-  }
 }
 
-function emitError(error: TranscriptError): void {
-  broadcast('transcript:error', error)
+function asGermanClock(iso: string): string {
+  return new Date(iso).toLocaleString('de-DE', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit'
+  })
+}
+
+function mapFrameToSegment(frame: DecodedFrame): TranscriptSegment {
+  if (azureService) {
+    azureService.pushFrame(frame)
+  }
+  return toMockTranscriptSegment(frame)
+}
+
+async function stopRecording(): Promise<TranscriptStatus> {
+  try {
+    mockService.stop()
+    await sidecarSession.stop()
+    if (azureService) {
+      await azureService.stop()
+      azureService = null
+    }
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error)
+    emitError({ code: 'MOCK_STOP_FAILED', message })
+  }
+
+  status.running = false
+  delete status.startedAt
+  broadcast('transcript:status', status)
+  return status
+}
+
+async function startMock(): Promise<void> {
+  mockService.start((segment) => {
+    broadcast('transcript:segment', segment)
+  })
+}
+
+async function startReal(): Promise<void> {
+  const devices = await refreshDevices()
+
+  if (devices.outputs.length === 0) {
+    throw new Error('Kein Speaker-Loopback-Device verfügbar.')
+  }
+
+  const fixedAzure = await loadFixedAzureConfig()
+  if (!fixedAzure) {
+    throw new Error('Azure Fixed Config fehlt oder ist ungültig (config/azure.fixed.json).')
+  }
+
+  azureService = new AzureTranscriptionService(fixedAzure, userSettings, (segment) => {
+    broadcast('transcript:segment', segment)
+  }, emitError)
+
+  await azureService.init()
+
+  await sidecarSession.start(
+    {
+      micId: userSettings.devices.micId,
+      speakerId: userSettings.devices.speakerLoopbackId,
+      language: userSettings.language,
+      sampleRate: 16000
+    },
+    (frame) => {
+      const segment = mapFrameToSegment(frame)
+      broadcast('transcript:segment', segment)
+    },
+    emitError
+  )
 }
 
 function registerIpc(): void {
   ipcMain.handle('transcript:start', async () => {
     try {
-      if (!status.running) {
-        status.running = true
-        status.startedAt = new Date().toISOString()
+      if (status.running) return status
 
-        mockService.start((segment) => {
-          broadcast('transcript:segment', segment)
-        })
+      status.running = true
+      status.mode = userSettings.runtimeMode
+      status.startedAt = new Date().toISOString()
 
-        broadcast('transcript:status', status)
+      if (userSettings.runtimeMode === 'real') {
+        await startReal()
+      } else {
+        await startMock()
       }
+
+      broadcast('transcript:status', status)
       return status
-    } catch (cause) {
-      const message = cause instanceof Error ? cause.message : 'Unbekannter Fehler beim Start.'
-      emitError({ code: 'MOCK_START_FAILED', message })
-      throw cause
+    } catch (error) {
+      status.running = false
+      delete status.startedAt
+      const message = error instanceof Error ? error.message : 'Unbekannter Fehler beim Start.'
+
+      const code = message.includes('Loopback')
+        ? 'LOOPBACK_REQUIRED'
+        : message.includes('Azure')
+          ? 'AZURE_AUTH_FAILED'
+          : 'SIDECAR_START_FAILED'
+
+      emitError({ code, message })
+      throw error
     }
   })
 
-  ipcMain.handle('transcript:stop', async () => {
-    mockService.stop()
-    status.running = false
-    delete status.startedAt
-    broadcast('transcript:status', status)
-    return status
-  })
+  ipcMain.handle('transcript:stop', async () => stopRecording())
 
   ipcMain.handle('transcript:get-status', async () => status)
+
+  ipcMain.handle('transcript:get-devices', async () => refreshDevices())
+
+  ipcMain.handle('transcript:get-settings', async () => userSettings)
+
+  ipcMain.handle('transcript:save-settings', async (_event, payload) => {
+    try {
+      userSettings = await saveUserSettings(payload)
+      status.mode = userSettings.runtimeMode
+      return userSettings
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error)
+      emitError({ code: 'SETTINGS_PERSIST_FAILED', message })
+      throw error
+    }
+  })
+
+  ipcMain.handle('transcript:copy', async (_event, segments: TranscriptSegment[]) => {
+    const finalSegments = segments.filter((segment) => segment.state === 'final')
+    const content = finalSegments
+      .map((segment) => `[${asGermanClock(segment.timestampIso)}] ${segment.source.toUpperCase()} | ${segment.speaker}: ${segment.text}`)
+      .join('\n')
+
+    clipboard.writeText(content)
+  })
 }
 
 app.whenReady().then(() => {
@@ -147,7 +234,10 @@ app.whenReady().then(() => {
   })
 })
 
+app.on('before-quit', () => {
+  void stopRecording()
+})
+
 app.on('window-all-closed', () => {
-  mockService.stop()
   if (process.platform !== 'darwin') app.quit()
 })

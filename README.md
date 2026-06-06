@@ -1,70 +1,61 @@
 # meeting-notes
 
-Projekt zur strukturierten Erfassung und Nachverfolgung von Meeting-Notizen.
+PoC zur strukturierten Erfassung von Meeting-Transkripten (Electron + React + C# Sidecar).
 
-## Ziel
-- Notizen aus Meetings sammeln
-- To-dos und Entscheidungen festhalten
-- Offene Punkte nachverfolgen
+## Features (aktueller Stand)
+- Start/Stop Recording im UI
+- Live-Transkript mit Mic/Speaker-Markierung + Interim/Final
+- Fehler-/Status-Events via IPC
+- Persistente Einstellungen (Sprache, Devices, Modus mock/real)
+- TXT-Export (Clipboard)
+- C#-Sidecar (WASAPI Mic + Loopback) mit Frame-Protokoll über Named Pipe
+- Optional Azure Speech Recognizer (real mode)
 
-## Aktueller Stand
-Der aktuelle Fokus liegt auf einem PoC für eine Desktop-Client-Anwendung (Node.js + Electron + React) mit Audio-Transkription.
+## Voraussetzungen
+- Node gemäß `.nvmrc` (empfohlen: 22 LTS)
+- .NET SDK (für Sidecar-Build)
 
-Wichtige Dokumente im Repository:
-- `PROJECT.md` – Projektstatus und Session-Log
-- `SPEC-v0.1.md` – fachlich/technischer Spezifikationsstand
-- `DECISIONS.md` – dokumentierte Architektur-/Projektentscheidungen
-- `tasks.json` – Aufgabenübersicht
-- `specs/` – Spezifikationen pro Task
-- `context/` – Hintergrundrecherche (z. B. Azure Speech SDK)
+## Setup
+```bash
+nvm use
+npm install
+```
 
-## MVP-Aufteilung
-- **MVP 1 (aktuell in Umsetzung):** Electron-App startbar, IPC mit Mock-Backend, React-UI mit Live-Anzeige.
-- **MVP 2:** C#-Sidecar + Azure Speech SDK anbinden und Mock ersetzen.
+### Optional: Azure aktivieren (real mode)
+1. Beispiel kopieren:
+   - `config/azure.fixed.example.json` -> `config/azure.fixed.json`
+   - `config/user-settings.example.json` -> `config/user-settings.json`
+2. `AZURE_SPEECH_KEY` als Umgebungsvariable setzen (oder die in `speechKeyEnvVar` konfigurierte Variable)
+3. Im UI Modus auf **Real (Sidecar + Azure)** umstellen
 
-Details: `MVP-PLAN.md`
+## Entwicklung
+```bash
+npm run dev
+```
 
-## Node-Version (robustes Setup)
-- Standard: `.nvmrc` = `22` (LTS-Linie, empfohlen)
-- Erlaubte Versionen (`engines` + `.npmrc engine-strict=true`):
-  - `>=22.12.0 <23`
-  - `>=24.0.0 <24.16.0`
+## Checks
+```bash
+npm run typecheck
+npm run build
+npm run test:smoke
+npm run measure:latency
+npm run build:sidecar
+```
 
-Warum: Für `24.16.0+` gibt es aktuell ein bekanntes Problem beim Electron-Binary-Install (unvollständige Extraction).
+## Portable Build (unsigniert)
+```bash
+npm run dist:portable
+```
+Artefakte: `dist/portable/`
 
-Statuscheck (05.06.2026):
-- Node v24.16.0 ist der neueste verfügbare 24er-Release (laut GitHub Releases)
-- Es liegt noch kein bestätigter Fix-Release in 24.x vor
-- Bis dahin bleibt Node 22 LTS der empfohlene Standard
+## Runbook (Kurz)
+1. App starten (`npm run dev` oder portables Artefakt)
+2. Settings prüfen: Sprache, Mic, Speaker-Loopback, Modus
+3. Start klicken
+4. Bei Fehlercode `LOOPBACK_*`: Audio-Output/Device prüfen, danach erneut starten
+5. Finales Transkript über **TXT in Clipboard** exportieren
 
-Details und Downgrade-Schritte: `TROUBLESHOOTING.md`
-
-## Lokaler Start (MVP 1)
-- `nvm use`
-- `npm install`
-- `npm run dev`
-
-Checks:
-- `npm run check:node`
-- `npm run typecheck`
-- `npm run build`
-- `npm run test:smoke` (reproduzierbarer Electron-Smoketest: UI lädt, IPC-Bridge verfügbar, Mock-Flow startet)
-
-## Konfigurationsmodell (T-103)
-Feste Konfiguration und User-Settings sind getrennt:
-
-- **Fixed Azure Config (verbindlich):** `config/azure.fixed.json` (lokal, nicht committed)
-  - Beispiel: `config/azure.fixed.example.json`
-  - Enthält nur technische/organisatorische Defaults (Endpoint, Region, Mode, Key-Env-Var)
-- **User-Settings (persistent):** `config/user-settings.json` (lokal, nicht committed)
-  - Beispiel: `config/user-settings.example.json`
-  - Enthält Sprache + Device-Auswahl (Mic/Loopback)
-
-Regeln:
-- Sprache fallbackt auf `de-DE`, wenn Wert fehlt/ungültig ist.
-- Devices fallbacken auf `null` (= System-Default/Auto-Discovery).
-- Fixed Azure Config wird beim Start validiert (siehe `src/shared/config-contract.ts`).
-
-## Hinweise
-- Dieses Repository enthält primär Planung, Spezifikation und Kontextmaterial.
-- Implementierungsartefakte der PoC-App werden schrittweise ergänzt.
+## Bekannte Einschränkungen
+- Real-Modus benötigt gültige Azure-Konfiguration und Schlüssel
+- Hardwarematrix (integriertes Mic + kabelgebundenes Headset) muss auf Zielgerät validiert werden
+- Der portable Build ist PoC-haft und unsigniert

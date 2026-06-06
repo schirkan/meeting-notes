@@ -1,7 +1,7 @@
 # T-300: Speech- und Orchestrierungslogik im Electron Main implementieren
 
 ## Kontext
-Status: open
+Status: review
 Priorität: high
 Subtasks: T-301, T-302, T-303, T-304, T-305, T-306
 Abhängigkeiten: -
@@ -10,9 +10,9 @@ Abhängigkeiten: -
 Electron Main als Orchestrator für Sidecar, Azure Speech und IPC-Eventstream umsetzen.
 
 ## Done When
-- [ ] Main steuert Sidecar-Lifecycle stabil.
-- [ ] PCM wird in Speech-Pipeline eingespeist.
-- [ ] Transkripte/Status werden live an Renderer übertragen.
+- [x] Main steuert Sidecar-Lifecycle stabil.
+- [x] PCM wird in Speech-Pipeline eingespeist.
+- [x] Transkripte/Status werden live an Renderer übertragen.
 
 ## Approach
 - Subtasks T-301 bis T-306 als Kernimplementierung umsetzen.
@@ -21,3 +21,4 @@ Electron Main als Orchestrator für Sidecar, Azure Speech und IPC-Eventstream um
 
 ## Log
 - 2026-06-03: Spec detailliert ausgefüllt.
+- 2026-06-06: Main-Orchestrierung umgesetzt (`src/main/*`): Sidecar-Start/Stop + Pipe-Frame-Parsing + optionale Azure-Speech-Pipeline + IPC-Status/Fehler/Segment-Streaming.

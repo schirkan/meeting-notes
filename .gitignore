@@ -26,6 +26,10 @@ coverage/
 out/
 *.tsbuildinfo
 
+# .NET / sidecar build artifacts
+sidecar/bin/
+sidecar/obj/
+
 # Local runtime config (secrets / machine-specific)
 config/azure.fixed.json
 config/user-settings.json

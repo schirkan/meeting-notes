@@ -1,7 +1,8 @@
-export const TRANSCRIPT_CONTRACT_VERSION = '1.1.0'
+export const TRANSCRIPT_CONTRACT_VERSION = '1.2.0'
 
 export type TranscriptSource = 'mic' | 'speaker'
 export type TranscriptState = 'interim' | 'final'
+export type RuntimeMode = 'mock' | 'real'
 
 export interface TranscriptSegment {
   id: string
@@ -13,9 +14,22 @@ export interface TranscriptSegment {
   confidence?: number
 }
 
+export interface AudioDeviceInfo {
+  id: string
+  name: string
+  flow: 'input' | 'output'
+  isDefault: boolean
+}
+
+export interface AudioDeviceSnapshot {
+  inputs: AudioDeviceInfo[]
+  outputs: AudioDeviceInfo[]
+  fetchedAtIso: string
+}
+
 export interface TranscriptStatus {
   running: boolean
-  mode: 'mock' | 'real'
+  mode: RuntimeMode
   startedAt?: string
   contractVersion: string
 }
@@ -33,6 +47,7 @@ export type TranscriptErrorCode =
   | 'IPC_CONTRACT_MISMATCH'
   | 'UI_START_FAILED'
   | 'UI_STOP_FAILED'
+  | 'SETTINGS_PERSIST_FAILED'
 
 export interface TranscriptError {
   code: TranscriptErrorCode
@@ -106,6 +121,11 @@ export const TRANSCRIPT_ERROR_CATALOG: Record<
     blocker: false,
     description: 'Stop wurde im Renderer ausgelöst, aber Main-Call ist fehlgeschlagen.',
     recoveryHint: 'Erneut stoppen oder App neu starten.'
+  },
+  SETTINGS_PERSIST_FAILED: {
+    blocker: false,
+    description: 'Einstellungen konnten nicht gespeichert werden.',
+    recoveryHint: 'Pfad-/Dateirechte prüfen und erneut speichern.'
   }
 }
 
@@ -113,6 +133,10 @@ export interface TranscriptApi {
   start: () => Promise<TranscriptStatus>
   stop: () => Promise<TranscriptStatus>
   getStatus: () => Promise<TranscriptStatus>
+  getDevices: () => Promise<AudioDeviceSnapshot>
+  getSettings: () => Promise<import('./config-contract').UserSettings>
+  saveSettings: (settings: import('./config-contract').UserSettings) => Promise<import('./config-contract').UserSettings>
+  copyTranscript: (segments: TranscriptSegment[]) => Promise<void>
   onSegment: (cb: (segment: TranscriptSegment) => void) => () => void
   onError: (cb: (error: TranscriptError) => void) => () => void
   onStatus: (cb: (status: TranscriptStatus) => void) => () => void

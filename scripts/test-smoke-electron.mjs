@@ -33,7 +33,10 @@ async function main() {
     }
 
     await window.getByRole('button', { name: 'Start' }).click()
-    await window.waitForFunction(() => document.body.innerText.includes('Läuft (Mock-Service aktiv)'), null, {
+    await window.waitForFunction(() => {
+      const text = document.body.innerText
+      return text.includes('Status: Läuft (')
+    }, null, {
       timeout: TIMEOUT_MS
     })
 

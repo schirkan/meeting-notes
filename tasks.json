@@ -39,7 +39,7 @@
     {
       "id": "T-200",
       "title": "C# Audio-Capture-Sidecar für Windows 11 implementieren",
-      "status": "open",
+      "status": "review",
       "priority": "high",
       "subtaskIds": [
         "T-201",
@@ -54,7 +54,7 @@
     {
       "id": "T-201",
       "title": "C# Sidecar-Prozess (CLI/Service) mit Startparametern und Lifecycle erstellen",
-      "status": "open",
+      "status": "review",
       "priority": "high",
       "parentId": "T-200",
       "specFile": "specs/T-201.md"
@@ -62,7 +62,7 @@
     {
       "id": "T-202",
       "title": "Mikrofon-Capture (WASAPI) implementieren",
-      "status": "open",
+      "status": "review",
       "priority": "high",
       "parentId": "T-200",
       "specFile": "specs/T-202.md"
@@ -70,7 +70,7 @@
     {
       "id": "T-203",
       "title": "Speaker-Loopback-Capture (WASAPI) implementieren",
-      "status": "open",
+      "status": "review",
       "priority": "high",
       "parentId": "T-200",
       "specFile": "specs/T-203.md"
@@ -78,7 +78,7 @@
     {
       "id": "T-204",
       "title": "PCM-Frame-Protokoll Sidecar -> Electron Main definieren und implementieren",
-      "status": "open",
+      "status": "review",
       "priority": "high",
       "parentId": "T-200",
       "specFile": "specs/T-204.md"
@@ -86,7 +86,7 @@
     {
       "id": "T-205",
       "title": "Device-Discovery + Auswahl (Default/Explizit) im Sidecar bereitstellen",
-      "status": "open",
+      "status": "review",
       "priority": "medium",
       "parentId": "T-200",
       "specFile": "specs/T-205.md"
@@ -94,7 +94,7 @@
     {
       "id": "T-206",
       "title": "Robustes Fehlerhandling im Sidecar (Loopback-Ausfall = Blocker, Graceful Shutdown)",
-      "status": "open",
+      "status": "review",
       "priority": "high",
       "parentId": "T-200",
       "specFile": "specs/T-206.md"
@@ -102,7 +102,7 @@
     {
       "id": "T-300",
       "title": "Speech- und Orchestrierungslogik im Electron Main implementieren",
-      "status": "open",
+      "status": "review",
       "priority": "high",
       "subtaskIds": [
         "T-301",
@@ -117,7 +117,7 @@
     {
       "id": "T-301",
       "title": "Sidecar aus Main-Prozess starten/stoppen und Gesundheitszustand überwachen",
-      "status": "open",
+      "status": "review",
       "priority": "high",
       "parentId": "T-300",
       "specFile": "specs/T-301.md"
@@ -125,7 +125,7 @@
     {
       "id": "T-302",
       "title": "PCM aus Sidecar in PushStreams (Mic/Speaker) für Azure Speech überführen",
-      "status": "open",
+      "status": "review",
       "priority": "high",
       "parentId": "T-300",
       "specFile": "specs/T-302.md"
@@ -133,7 +133,7 @@
     {
       "id": "T-303",
       "title": "Azure Speech Recognizer/ConversationTranscriber anbinden (interim + final)",
-      "status": "open",
+      "status": "review",
       "priority": "high",
       "parentId": "T-300",
       "specFile": "specs/T-303.md"
@@ -141,7 +141,7 @@
     {
       "id": "T-304",
       "title": "Transkript-Eventmodell vereinheitlichen (Quelle, Sprecher, Zeitstempel, Text)",
-      "status": "open",
+      "status": "review",
       "priority": "medium",
       "parentId": "T-300",
       "specFile": "specs/T-304.md"
@@ -149,7 +149,7 @@
     {
       "id": "T-305",
       "title": "Regel durchsetzen: Kein Recording ohne funktionierendes Speaker-Loopback",
-      "status": "open",
+      "status": "review",
       "priority": "high",
       "parentId": "T-300",
       "specFile": "specs/T-305.md"
@@ -157,7 +157,7 @@
     {
       "id": "T-306",
       "title": "Main->Renderer IPC-Streaming für Transkriptsegmente implementieren",
-      "status": "open",
+      "status": "review",
       "priority": "high",
       "parentId": "T-300",
       "specFile": "specs/T-306.md"
@@ -165,7 +165,7 @@
     {
       "id": "T-400",
       "title": "WebUI (React) für Live-Transkript und Steuerung umsetzen",
-      "status": "open",
+      "status": "review",
       "priority": "medium",
       "subtaskIds": [
         "T-401",
@@ -178,7 +178,7 @@
     {
       "id": "T-401",
       "title": "Start/Stop-Controls und Laufzeitstatus (inkl. Fehlerindikator) implementieren",
-      "status": "open",
+      "status": "review",
       "priority": "medium",
       "parentId": "T-400",
       "specFile": "specs/T-401.md"
@@ -186,7 +186,7 @@
     {
       "id": "T-402",
       "title": "Live-Transcript-Panel mit Quellmarkierung (Mic/Speaker) und Zeitstempel bauen",
-      "status": "open",
+      "status": "review",
       "priority": "medium",
       "parentId": "T-400",
       "specFile": "specs/T-402.md"
@@ -194,7 +194,7 @@
     {
       "id": "T-403",
       "title": "UI-Einstellungen für Sprache + Devices und Persistenz über Neustart umsetzen",
-      "status": "open",
+      "status": "review",
       "priority": "medium",
       "parentId": "T-400",
       "specFile": "specs/T-403.md"
@@ -202,7 +202,7 @@
     {
       "id": "T-404",
       "title": "Copy-to-Clipboard für vollständiges TXT-Transkript implementieren",
-      "status": "open",
+      "status": "review",
       "priority": "medium",
       "parentId": "T-400",
       "specFile": "specs/T-404.md"
@@ -210,7 +210,7 @@
     {
       "id": "T-500",
       "title": "Qualitätssicherung, Akzeptanztests und PoC-Delivery abschließen",
-      "status": "open",
+      "status": "review",
       "priority": "medium",
       "subtaskIds": [
         "T-501",
@@ -222,7 +222,7 @@
     {
       "id": "T-501",
       "title": "Latenz messen und Ziel <5s für neue Segmente verifizieren",
-      "status": "open",
+      "status": "review",
       "priority": "high",
       "parentId": "T-500",
       "specFile": "specs/T-501.md"
@@ -230,7 +230,7 @@
     {
       "id": "T-502",
       "title": "Testmatrix durchführen (integriertes Mic + kabelgebundenes Headset, Loopback-Fehlerfall)",
-      "status": "open",
+      "status": "review",
       "priority": "medium",
       "parentId": "T-500",
       "specFile": "specs/T-502.md"
@@ -238,7 +238,7 @@
     {
       "id": "T-503",
       "title": "Portablen unsignierten Build und kurze Runbook-Dokumentation bereitstellen",
-      "status": "open",
+      "status": "review",
       "priority": "medium",
       "parentId": "T-500",
       "specFile": "specs/T-503.md"

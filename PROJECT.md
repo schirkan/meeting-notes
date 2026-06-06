@@ -14,6 +14,8 @@
 - 05.06.2026: Troubleshooting-Dokument ergänzt (`TROUBLESHOOTING.md`) inkl. Downgrade-Pfad und Upstream-Referenzen; Statusprüfung auf neuere 24er-Node-Version durchgeführt.
 - 06.06.2026: IPC-Contract auf `1.1.0` erweitert (Contract-Version im Status + typisierte Fehlercodes mit Loopback-Blockern) und erfolgreich via Typecheck/Build/Smoke verifiziert.
 - 06.06.2026: Konfigurationsmodell festgezogen: fester Azure-JSON-Contract + persistente User-Settings als getrennte Dateien inkl. Defaults/Fallback-Regeln (`src/shared/config-contract.ts`, `config/*.example.json`, README-Abschnitt).
+- 06.06.2026: MVP-2-Basis umgesetzt: C#-Sidecar (WASAPI Mic + Loopback), Named-Pipe-Frame-Protokoll, Sidecar-Orchestrierung im Main, Azure-Speech-Anbindung (optional, konfigurationsbasiert) und erweitertes UI für Settings + TXT-Export.
+- 06.06.2026: QA/Delivery ergänzt: Latenzmess-Skript + Report (`context/latency-report.md`), Testmatrix (`context/test-matrix.md`) und unsignierter Portable-Build (`dist/portable/meeting-notes-win32-x64`, SHA256SUMS).
 
 ## Scope
 - Notizen aus Meetings sammeln
@@ -46,3 +48,4 @@
 - 05.06.2026, 18:10 UTC: Ursache „leere Seite“ weiter abgesichert: Renderer robust gegen fehlende IPC-Bridge gemacht (sichtbare Laufzeitfehlermeldung statt White-Screen) und reproduzierbaren Smoke-Test erstellt (`scripts/test-smoke-electron.mjs`), der Build + App-Start + Bridge + Mock-Transkript prüft.
 - 06.06.2026, 07:xx UTC: T-102 abgeschlossen und auf Review gesetzt: Shared-IPC-Contract um `TRANSCRIPT_CONTRACT_VERSION` erweitert und Fehlercode-Katalog inkl. Loopback-Blocker (`LOOPBACK_REQUIRED`, `LOOPBACK_DEVICE_NOT_FOUND`, `LOOPBACK_INIT_FAILED`) ergänzt; Typecheck/Build/Smoke grün.
 - 06.06.2026, 07:xx UTC: T-103 umgesetzt und auf Review gesetzt: Config-Contract + Beispielkonfigurationen eingeführt (`src/shared/config-contract.ts`, `config/azure.fixed.example.json`, `config/user-settings.example.json`), lokale Runtime-Config in `.gitignore` ergänzt und Fallback-Regeln in README dokumentiert.
+- 06.06.2026, 09:xx UTC: Ausstehende Tasks T-200/T-300/T-400/T-500 implementiert und auf Review gesetzt: Sidecar + Main-Orchestrierung + UI-Settings/Clipboard + QA/Portable-Delivery. Verifikation: `npm run typecheck`, `npm run build`, `npm run test:smoke`, `npm run build:sidecar`, `npm run measure:latency`, `npm run dist:portable`.

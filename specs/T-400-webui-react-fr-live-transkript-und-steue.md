@@ -1,7 +1,7 @@
 # T-400: WebUI (React) für Live-Transkript und Steuerung umsetzen
 
 ## Kontext
-Status: open
+Status: review
 Priorität: medium
 Subtasks: T-401, T-402, T-403, T-404
 Abhängigkeiten: -
@@ -10,9 +10,9 @@ Abhängigkeiten: -
 React-WebUI für Bedienung und Live-Transkript des PoC bereitstellen.
 
 ## Done When
-- [ ] Aufnahme steuerbar und Status klar sichtbar.
-- [ ] Transkripte live nach Quelle dargestellt.
-- [ ] Sprache/Devices konfigurierbar, TXT-Clipboard möglich.
+- [x] Aufnahme steuerbar und Status klar sichtbar.
+- [x] Transkripte live nach Quelle dargestellt.
+- [x] Sprache/Devices konfigurierbar, TXT-Clipboard möglich.
 
 ## Approach
 - Subtasks T-401 bis T-404 umsetzen.
@@ -21,3 +21,4 @@ React-WebUI für Bedienung und Live-Transkript des PoC bereitstellen.
 
 ## Log
 - 2026-06-03: Spec detailliert ausgefüllt.
+- 2026-06-06: UI erweitert um Settings (Modus/Sprache/Devices), Fehler-/Statusanzeige und Clipboard-Export (`src/renderer/src/App.tsx`).
