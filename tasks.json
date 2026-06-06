@@ -3,7 +3,7 @@
     {
       "id": "T-100",
       "title": "PoC-Implementierung planen und Grundstruktur festziehen",
-      "status": "in-progress",
+      "status": "review",
       "priority": "high",
       "subtaskIds": [
         "T-101",
@@ -23,7 +23,7 @@
     {
       "id": "T-102",
       "title": "IPC-Vertrag definieren (Start/Stop, Status, Transcript-Events, Fehlercodes)",
-      "status": "in-progress",
+      "status": "review",
       "priority": "high",
       "parentId": "T-100",
       "specFile": "specs/T-102.md"
@@ -31,7 +31,7 @@
     {
       "id": "T-103",
       "title": "Konfigurationsmodell festlegen (Azure-JSON fix, Sprache/Device persistent)",
-      "status": "open",
+      "status": "review",
       "priority": "medium",
       "parentId": "T-100",
       "specFile": "specs/T-103.md"

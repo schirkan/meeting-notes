@@ -1,14 +1,19 @@
 import { app, BrowserWindow, ipcMain } from 'electron'
 import { join } from 'node:path'
 import { MockTranscriptService } from './mock-transcript-service'
-import type { TranscriptError, TranscriptStatus } from '@shared/transcript-contract'
+import {
+  TRANSCRIPT_CONTRACT_VERSION,
+  type TranscriptError,
+  type TranscriptStatus
+} from '@shared/transcript-contract'
 
 const mockService = new MockTranscriptService()
 let mainWindow: BrowserWindow | null = null
 
 const status: TranscriptStatus = {
   running: false,
-  mode: 'mock'
+  mode: 'mock',
+  contractVersion: TRANSCRIPT_CONTRACT_VERSION
 }
 
 function broadcast(channel: string, payload: unknown): void {

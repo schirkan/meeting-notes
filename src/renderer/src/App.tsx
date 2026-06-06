@@ -1,7 +1,16 @@
 import { useEffect, useMemo, useState } from 'react'
-import type { TranscriptError, TranscriptSegment, TranscriptStatus } from '@shared/transcript-contract'
+import {
+  TRANSCRIPT_CONTRACT_VERSION,
+  type TranscriptError,
+  type TranscriptSegment,
+  type TranscriptStatus
+} from '@shared/transcript-contract'
 
-const initialStatus: TranscriptStatus = { running: false, mode: 'mock' }
+const initialStatus: TranscriptStatus = {
+  running: false,
+  mode: 'mock',
+  contractVersion: TRANSCRIPT_CONTRACT_VERSION
+}
 
 export function App() {
   const [status, setStatus] = useState<TranscriptStatus>(initialStatus)

@@ -50,6 +50,21 @@ Checks:
 - `npm run build`
 - `npm run test:smoke` (reproduzierbarer Electron-Smoketest: UI lädt, IPC-Bridge verfügbar, Mock-Flow startet)
 
+## Konfigurationsmodell (T-103)
+Feste Konfiguration und User-Settings sind getrennt:
+
+- **Fixed Azure Config (verbindlich):** `config/azure.fixed.json` (lokal, nicht committed)
+  - Beispiel: `config/azure.fixed.example.json`
+  - Enthält nur technische/organisatorische Defaults (Endpoint, Region, Mode, Key-Env-Var)
+- **User-Settings (persistent):** `config/user-settings.json` (lokal, nicht committed)
+  - Beispiel: `config/user-settings.example.json`
+  - Enthält Sprache + Device-Auswahl (Mic/Loopback)
+
+Regeln:
+- Sprache fallbackt auf `de-DE`, wenn Wert fehlt/ungültig ist.
+- Devices fallbacken auf `null` (= System-Default/Auto-Discovery).
+- Fixed Azure Config wird beim Start validiert (siehe `src/shared/config-contract.ts`).
+
 ## Hinweise
 - Dieses Repository enthält primär Planung, Spezifikation und Kontextmaterial.
 - Implementierungsartefakte der PoC-App werden schrittweise ergänzt.

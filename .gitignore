@@ -25,3 +25,7 @@ coverage/
 # Electron / tooling artifacts
 out/
 *.tsbuildinfo
+
+# Local runtime config (secrets / machine-specific)
+config/azure.fixed.json
+config/user-settings.json
