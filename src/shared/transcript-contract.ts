@@ -1,8 +1,5 @@
-export const TRANSCRIPT_CONTRACT_VERSION = '1.2.0'
-
 export type TranscriptSource = 'mic' | 'speaker'
 export type TranscriptState = 'interim' | 'final'
-export type RuntimeMode = 'mock' | 'real'
 
 export interface TranscriptSegment {
   id: string
@@ -29,14 +26,11 @@ export interface AudioDeviceSnapshot {
 
 export interface TranscriptStatus {
   running: boolean
-  mode: RuntimeMode
   startedAt?: string
-  contractVersion: string
 }
 
 export type TranscriptErrorCode =
-  | 'MOCK_START_FAILED'
-  | 'MOCK_STOP_FAILED'
+  | 'TRANSCRIPTION_STOP_FAILED'
   | 'LOOPBACK_REQUIRED'
   | 'LOOPBACK_DEVICE_NOT_FOUND'
   | 'LOOPBACK_INIT_FAILED'
@@ -44,7 +38,6 @@ export type TranscriptErrorCode =
   | 'SIDECAR_UNAVAILABLE'
   | 'AZURE_AUTH_FAILED'
   | 'AZURE_RECOGNIZER_FAILED'
-  | 'IPC_CONTRACT_MISMATCH'
   | 'UI_START_FAILED'
   | 'UI_STOP_FAILED'
   | 'SETTINGS_PERSIST_FAILED'
@@ -62,14 +55,9 @@ export const TRANSCRIPT_ERROR_CATALOG: Record<
     recoveryHint: string
   }
 > = {
-  MOCK_START_FAILED: {
+  TRANSCRIPTION_STOP_FAILED: {
     blocker: false,
-    description: 'Mock-Service konnte nicht gestartet werden.',
-    recoveryHint: 'App neu starten und Logs prüfen.'
-  },
-  MOCK_STOP_FAILED: {
-    blocker: false,
-    description: 'Mock-Service konnte nicht sauber gestoppt werden.',
+    description: 'Transkript-Service konnte nicht sauber gestoppt werden.',
     recoveryHint: 'Erneut stoppen oder App neu starten.'
   },
   LOOPBACK_REQUIRED: {
@@ -106,11 +94,6 @@ export const TRANSCRIPT_ERROR_CATALOG: Record<
     blocker: false,
     description: 'Recognizer hat einen Laufzeitfehler gemeldet.',
     recoveryHint: 'Transkription neu starten und Azure-Diagnose prüfen.'
-  },
-  IPC_CONTRACT_MISMATCH: {
-    blocker: true,
-    description: 'Main und Renderer nutzen unterschiedliche Contract-Versionen.',
-    recoveryHint: 'App vollständig neu bauen/starten, Versionen synchronisieren.'
   },
   UI_START_FAILED: {
     blocker: false,

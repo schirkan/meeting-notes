@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import type { UserSettings } from '@shared/config-contract'
 import {
-  TRANSCRIPT_CONTRACT_VERSION,
   type AudioDeviceSnapshot,
   type TranscriptError,
   type TranscriptSegment,
@@ -9,14 +8,11 @@ import {
 } from '@shared/transcript-contract'
 
 const initialStatus: TranscriptStatus = {
-  running: false,
-  mode: 'mock',
-  contractVersion: TRANSCRIPT_CONTRACT_VERSION
+  running: false
 }
 
 const initialSettings: UserSettings = {
   language: 'de-DE',
-  runtimeMode: 'mock',
   devices: {
     micId: null,
     speakerLoopbackId: null
@@ -78,10 +74,10 @@ export function App() {
   }, [])
 
   const statusLabel = useMemo(() => {
-    if (status.running) return `Läuft (${status.mode === 'real' ? 'Sidecar + Azure' : 'Mock-Service'})`
+    if (status.running) return 'Läuft (Sidecar + Azure)'
     if (lastError) return 'Fehler'
     return 'Gestoppt'
-  }, [lastError, status.mode, status.running])
+  }, [lastError, status.running])
 
   const onStart = async () => {
     try {
@@ -133,7 +129,7 @@ export function App() {
     <main className="container">
       <header>
         <h1>Meeting Notes – MVP</h1>
-        <p>Live-Transkript mit Mock/Real-Modus, Device-Auswahl und TXT-Export.</p>
+        <p>Live-Transkript mit Sidecar + Azure, Device-Auswahl und TXT-Export.</p>
       </header>
 
       {runtimeIssue && (
@@ -153,7 +149,6 @@ export function App() {
           TXT in Clipboard
         </button>
         <div className="badge">Status: {statusLabel}</div>
-        <div className="badge">Contract: {status.contractVersion}</div>
       </section>
 
       {copyHint && <section className="hint">{copyHint}</section>}
@@ -167,18 +162,6 @@ export function App() {
       <section className="panel settings">
         <h2>Einstellungen</h2>
         <div className="row">
-          <label>
-            Modus
-            <select
-              value={settings.runtimeMode}
-              onChange={(event) => setSettings((prev) => ({ ...prev, runtimeMode: event.target.value as UserSettings['runtimeMode'] }))}
-              disabled={status.running}
-            >
-              <option value="mock">Mock</option>
-              <option value="real">Real (Sidecar + Azure)</option>
-            </select>
-          </label>
-
           <label>
             Sprache
             <input

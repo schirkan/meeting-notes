@@ -1,19 +1,16 @@
 import { app, BrowserWindow, clipboard, ipcMain } from 'electron'
 import { join } from 'node:path'
 import {
-  TRANSCRIPT_CONTRACT_VERSION,
   type AudioDeviceSnapshot,
   type TranscriptError,
   type TranscriptSegment,
   type TranscriptStatus
 } from '@shared/transcript-contract'
-import { MockTranscriptService } from './mock-transcript-service'
-import { toMockTranscriptSegment, type DecodedFrame } from './frame-protocol'
+import { type DecodedFrame } from './frame-protocol'
 import { SidecarSession, listSidecarDevices } from './sidecar-manager'
 import { AzureTranscriptionService } from './azure-transcription-service'
 import { loadFixedAzureConfig, loadUserSettings, saveUserSettings } from './settings-store'
 
-const mockService = new MockTranscriptService()
 const sidecarSession = new SidecarSession()
 
 let mainWindow: BrowserWindow | null = null
@@ -22,9 +19,7 @@ let devicesCache: AudioDeviceSnapshot = { inputs: [], outputs: [], fetchedAtIso:
 let userSettings = await loadUserSettings()
 
 const status: TranscriptStatus = {
-  running: false,
-  mode: userSettings.runtimeMode,
-  contractVersion: TRANSCRIPT_CONTRACT_VERSION
+  running: false
 }
 
 function broadcast(channel: string, payload: unknown): void {
@@ -97,16 +92,14 @@ function asGermanClock(iso: string): string {
   })
 }
 
-function mapFrameToSegment(frame: DecodedFrame): TranscriptSegment {
+function pushFrameToAzure(frame: DecodedFrame): void {
   if (azureService) {
     azureService.pushFrame(frame)
   }
-  return toMockTranscriptSegment(frame)
 }
 
 async function stopRecording(): Promise<TranscriptStatus> {
   try {
-    mockService.stop()
     await sidecarSession.stop()
     if (azureService) {
       await azureService.stop()
@@ -114,19 +107,13 @@ async function stopRecording(): Promise<TranscriptStatus> {
     }
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error)
-    emitError({ code: 'MOCK_STOP_FAILED', message })
+    emitError({ code: 'TRANSCRIPTION_STOP_FAILED', message })
   }
 
   status.running = false
   delete status.startedAt
   broadcast('transcript:status', status)
   return status
-}
-
-async function startMock(): Promise<void> {
-  mockService.start((segment) => {
-    broadcast('transcript:segment', segment)
-  })
 }
 
 async function startReal(): Promise<void> {
@@ -155,8 +142,7 @@ async function startReal(): Promise<void> {
       sampleRate: 16000
     },
     (frame) => {
-      const segment = mapFrameToSegment(frame)
-      broadcast('transcript:segment', segment)
+      pushFrameToAzure(frame)
     },
     emitError
   )
@@ -168,14 +154,9 @@ function registerIpc(): void {
       if (status.running) return status
 
       status.running = true
-      status.mode = userSettings.runtimeMode
       status.startedAt = new Date().toISOString()
 
-      if (userSettings.runtimeMode === 'real') {
-        await startReal()
-      } else {
-        await startMock()
-      }
+      await startReal()
 
       broadcast('transcript:status', status)
       return status
@@ -206,7 +187,6 @@ function registerIpc(): void {
   ipcMain.handle('transcript:save-settings', async (_event, payload) => {
     try {
       userSettings = await saveUserSettings(payload)
-      status.mode = userSettings.runtimeMode
       return userSettings
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error)

@@ -1,7 +1,6 @@
 import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import { dirname, join } from 'node:path'
 import {
-  APP_CONFIG_VERSION,
   DEFAULT_USER_SETTINGS,
   normalizeUserSettings,
   type FixedAzureConfig,
@@ -33,13 +32,18 @@ export async function saveUserSettings(settings: UserSettings): Promise<UserSett
 export async function loadFixedAzureConfig(): Promise<FixedAzureConfig | null> {
   try {
     const raw = await readFile(AZURE_FIXED_PATH, 'utf8')
-    const parsed = JSON.parse(raw) as { version?: string; azure?: unknown }
+    const parsed = JSON.parse(raw) as unknown
 
-    if (!parsed || parsed.version !== APP_CONFIG_VERSION || !validateFixedAzureConfig(parsed.azure)) {
-      return null
+    if (validateFixedAzureConfig(parsed)) {
+      return parsed
     }
 
-    return parsed.azure
+    const legacy = parsed as { azure?: unknown }
+    if (legacy && validateFixedAzureConfig(legacy.azure)) {
+      return legacy.azure
+    }
+
+    return null
   } catch {
     return null
   }

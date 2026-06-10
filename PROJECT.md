@@ -16,6 +16,8 @@
 - 06.06.2026: Konfigurationsmodell festgezogen: fester Azure-JSON-Contract + persistente User-Settings als getrennte Dateien inkl. Defaults/Fallback-Regeln (`src/shared/config-contract.ts`, `config/*.example.json`, README-Abschnitt).
 - 06.06.2026: MVP-2-Basis umgesetzt: C#-Sidecar (WASAPI Mic + Loopback), Named-Pipe-Frame-Protokoll, Sidecar-Orchestrierung im Main, Azure-Speech-Anbindung (optional, konfigurationsbasiert) und erweitertes UI für Settings + TXT-Export.
 - 06.06.2026: QA/Delivery ergänzt: Latenzmess-Skript + Report (`context/latency-report.md`), Testmatrix (`context/test-matrix.md`) und unsignierter Portable-Build (`dist/portable/meeting-notes-win32-x64`, SHA256SUMS).
+- 10.06.2026: Mock-Service und Mock/Real-Umschaltung entfernt; Runtime läuft jetzt ausschließlich über Sidecar + Azure.
+- 10.06.2026: API-/Config-Versionierung im Transcript-/Config-Contract entfernt (kein `contractVersion`, keine `version`-Pflicht in `azure.fixed.json`).
 
 ## Scope
 - Notizen aus Meetings sammeln
@@ -49,3 +51,4 @@
 - 06.06.2026, 07:xx UTC: T-102 abgeschlossen und auf Review gesetzt: Shared-IPC-Contract um `TRANSCRIPT_CONTRACT_VERSION` erweitert und Fehlercode-Katalog inkl. Loopback-Blocker (`LOOPBACK_REQUIRED`, `LOOPBACK_DEVICE_NOT_FOUND`, `LOOPBACK_INIT_FAILED`) ergänzt; Typecheck/Build/Smoke grün.
 - 06.06.2026, 07:xx UTC: T-103 umgesetzt und auf Review gesetzt: Config-Contract + Beispielkonfigurationen eingeführt (`src/shared/config-contract.ts`, `config/azure.fixed.example.json`, `config/user-settings.example.json`), lokale Runtime-Config in `.gitignore` ergänzt und Fallback-Regeln in README dokumentiert.
 - 06.06.2026, 09:xx UTC: Ausstehende Tasks T-200/T-300/T-400/T-500 implementiert und auf Review gesetzt: Sidecar + Main-Orchestrierung + UI-Settings/Clipboard + QA/Portable-Delivery. Verifikation: `npm run typecheck`, `npm run build`, `npm run test:smoke`, `npm run build:sidecar`, `npm run measure:latency`, `npm run dist:portable`.
+- 10.06.2026, 10:xx UTC: Mock-Service vollständig entfernt (Code + UI-Mode + Settings-Feld), API-/Contract-Versionfelder entfernt und auf Sidecar+Azure-only umgestellt. Verifikation: `npm run typecheck`, `npm run build`.

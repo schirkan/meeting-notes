@@ -1,5 +1,4 @@
-import { randomUUID } from 'node:crypto'
-import type { TranscriptSegment, TranscriptSource } from '@shared/transcript-contract'
+import type { TranscriptSource } from '@shared/transcript-contract'
 
 const MAGIC = 0x4d4e5043 // "MNPC"
 const HEADER_SIZE = 36
@@ -85,20 +84,3 @@ export function splitFrames(buffer: Buffer): { frames: DecodedFrame[]; rest: Buf
   return { frames, rest: buffer.subarray(offset) }
 }
 
-const MIC_WORDS = ['Update', 'Sprint', 'API', 'Ticket', 'Abstimmung', 'Review']
-const SPEAKER_WORDS = ['passt', 'Puffer', 'verstanden', 'einverstanden', 'morgen', 'später']
-
-export function toMockTranscriptSegment(frame: DecodedFrame): TranscriptSegment {
-  const pool = frame.source === 'mic' ? MIC_WORDS : SPEAKER_WORDS
-  const words = [pool[Math.floor(Math.random() * pool.length)], pool[Math.floor(Math.random() * pool.length)], pool[Math.floor(Math.random() * pool.length)]].join(' ')
-
-  return {
-    id: randomUUID(),
-    source: frame.source,
-    speaker: frame.source === 'mic' ? 'Du' : 'Gegenüber',
-    timestampIso: frame.timestampIso,
-    text: `${words} (${frame.payload.length}B)` ,
-    state: Math.random() > 0.3 ? 'final' : 'interim',
-    confidence: Number((0.72 + Math.random() * 0.26).toFixed(2))
-  }
-}
