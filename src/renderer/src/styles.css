@@ -116,6 +116,10 @@ ul {
   overflow: auto;
 }
 
+.transcript-list {
+  align-content: start;
+}
+
 .segment {
   display: grid;
   gap: 4px;
@@ -165,6 +169,36 @@ ul {
 .speaker-badge.speaker {
   background: #1d4ed8;
   color: #dbeafe;
+}
+
+.speaker-badge.speaker-guest-1 {
+  background: #1d4ed8;
+  color: #dbeafe;
+}
+
+.speaker-badge.speaker-guest-2 {
+  background: #047857;
+  color: #d1fae5;
+}
+
+.speaker-badge.speaker-guest-3 {
+  background: #b45309;
+  color: #fef3c7;
+}
+
+.speaker-badge.speaker-guest-4 {
+  background: #be185d;
+  color: #fce7f3;
+}
+
+.speaker-badge.speaker-unknown {
+  background: #475569;
+  color: #e2e8f0;
+}
+
+.speaker-badge.speaker-mic-self {
+  background: #14532d;
+  color: #dcfce7;
 }
 
 .debug-log-panel {

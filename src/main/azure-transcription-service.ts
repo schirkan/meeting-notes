@@ -152,18 +152,18 @@ export class AzureTranscriptionService {
     const closePromises = [...this.streams.values()].map(
       (state) =>
         new Promise<void>((resolve) => {
-          state.recognizer.stopContinuousRecognitionAsync(
-            () => {
-              state.pushStream.close()
-              state.recognizer.close()
-              resolve()
-            },
-            () => {
-              state.pushStream.close()
-              state.recognizer.close()
-              resolve()
-            }
-          )
+          const finalize = () => {
+            state.pushStream.close()
+            state.recognizer.close()
+            resolve()
+          }
+
+          if (state.mode === 'conversationTranscriber') {
+            state.recognizer.stopTranscribingAsync(finalize, finalize)
+            return
+          }
+
+          state.recognizer.stopContinuousRecognitionAsync(finalize, finalize)
         })
     )
 
@@ -196,7 +196,7 @@ export class AzureTranscriptionService {
     return {
       id: randomUUID(),
       source,
-      speaker: speakerId || 'Speaker unbekannt',
+      speaker: speakerId || 'unknown',
       timestampIso: new Date().toISOString(),
       text,
       state,
@@ -223,7 +223,7 @@ export class AzureTranscriptionService {
     return {
       id: randomUUID(),
       source,
-      speaker: source === 'mic' ? 'Du' : 'Gegenüber',
+      speaker: source === 'mic' ? 'self' : 'guest',
       timestampIso: new Date().toISOString(),
       text,
       state,

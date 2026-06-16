@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import type { UserSettings } from '@shared/config-contract'
 import {
   type AudioDeviceSnapshot,
@@ -36,6 +36,7 @@ export function App() {
   const [debugLog, setDebugLog] = useState<DebugLogEntry[]>([])
   const [settingsHint, setSettingsHint] = useState<string | null>(null)
   const [copyHint, setCopyHint] = useState<string | null>(null)
+  const transcriptListRef = useRef<HTMLUListElement | null>(null)
 
   useEffect(() => {
     const transcriptApi = window.transcriptApi
@@ -59,15 +60,49 @@ export function App() {
 
     const unsubSegment = transcriptApi.onSegment((segment) => {
       setSegments((prev) => {
-        const withoutInterimForSource = prev.filter(
-          (entry) => !(entry.source === segment.source && entry.state === 'interim')
+        const sameSpeakerKey = (entry: TranscriptSegment) =>
+          entry.source === segment.source && entry.speaker === segment.speaker
+
+        const isUnknownSpeaker = (speaker: string) => {
+          const normalized = speaker.trim().toLowerCase()
+          return normalized === 'unknown'
+        }
+
+        const withoutInterimForSpeaker = prev.filter(
+          (entry) => !(sameSpeakerKey(entry) && entry.state === 'interim')
+        )
+
+        const withoutUnknownInterimForSource = withoutInterimForSpeaker.filter(
+          (entry) => !(entry.source === segment.source && entry.state === 'interim' && isUnknownSpeaker(entry.speaker))
         )
 
         if (segment.state === 'final') {
-          return [segment, ...withoutInterimForSource].slice(0, 500)
+          const previousFinalIndex = [...withoutUnknownInterimForSource]
+            .reverse()
+            .findIndex((entry) => sameSpeakerKey(entry) && entry.state === 'final')
+
+          if (previousFinalIndex >= 0) {
+            const actualIndex = withoutUnknownInterimForSource.length - 1 - previousFinalIndex
+            const previousFinal = withoutUnknownInterimForSource[actualIndex]
+
+            if (actualIndex === withoutUnknownInterimForSource.length - 1) {
+              const mergedFinal: TranscriptSegment = {
+                ...segment,
+                id: previousFinal.id,
+                text: `${previousFinal.text} ${segment.text}`.trim(),
+                timestampIso: segment.timestampIso
+              }
+
+              return withoutUnknownInterimForSource
+                .map((entry, index) => (index === actualIndex ? mergedFinal : entry))
+                .slice(-500)
+            }
+          }
+
+          return [...withoutUnknownInterimForSource, segment].slice(-500)
         }
 
-        return [segment, ...withoutInterimForSource].slice(0, 500)
+        return [...withoutUnknownInterimForSource, segment].slice(-500)
       })
     })
 
@@ -90,6 +125,11 @@ export function App() {
       unsubDebugLog()
     }
   }, [])
+
+  useEffect(() => {
+    if (!transcriptListRef.current) return
+    transcriptListRef.current.scrollTop = transcriptListRef.current.scrollHeight
+  }, [segments])
 
   const statusLabel = useMemo(() => {
     if (status.running) return 'Läuft'
@@ -142,6 +182,20 @@ export function App() {
   }
 
   const finalCount = segments.filter((segment) => segment.state === 'final').length
+
+  const getSpeakerClass = (speaker: string) => {
+    const normalized = speaker.toLowerCase()
+
+    if (normalized.includes('guest-1')) return 'speaker-guest-1'
+    if (normalized.includes('guest-2')) return 'speaker-guest-2'
+    if (normalized.includes('guest-3')) return 'speaker-guest-3'
+    if (normalized.includes('guest-4')) return 'speaker-guest-4'
+    if (normalized.includes('unknown')) return 'speaker-unknown'
+    if (normalized.includes('self')) return 'speaker-mic-self'
+    if (normalized.includes('guest')) return 'speaker-guest-1'
+
+    return ''
+  }
 
   return (
     <main className="container">
@@ -245,14 +299,14 @@ export function App() {
         {segments.length === 0 ? (
           <p className="empty">Noch keine Daten. Starte den Service.</p>
         ) : (
-          <ul>
+          <ul ref={transcriptListRef} className="transcript-list">
             {segments.map((segment) => (
               <li key={segment.id} className={`segment ${segment.source}`}>
                 <span className="meta">
                   [{new Date(segment.timestampIso).toLocaleString('de-DE')}] {segment.source.toUpperCase()} · {segment.state}
                 </span>
                 <div className="segment-badges">
-                  <span className={`speaker-badge ${segment.source}`}>{segment.speaker}</span>
+                  <span className={`speaker-badge ${segment.source} ${getSpeakerClass(segment.speaker)}`.trim()}>{segment.speaker}</span>
                 </div>
                 <span>{segment.text}</span>
               </li>
