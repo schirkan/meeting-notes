@@ -61,9 +61,12 @@ export class SidecarSession {
   async start(
     options: SidecarStartOptions,
     onFrame: (frame: DecodedFrame) => void,
-    onError: (error: TranscriptError) => void
+    onError: (error: TranscriptError) => void,
+    onDebug: (message: string, level?: 'info' | 'warn' | 'error') => void
   ): Promise<void> {
     if (this.child) return
+
+    onDebug('SidecarSession.start aufgerufen.')
 
     const args = [
       '--pipe-name',
@@ -76,6 +79,8 @@ export class SidecarSession {
 
     if (options.micId) args.push('--mic-device-id', options.micId)
     if (options.speakerId) args.push('--speaker-device-id', options.speakerId)
+
+    onDebug(`Sidecar-Prozess wird gestartet (sampleRate=${options.sampleRate}, language=${options.language}).`)
 
     this.child = spawn('dotnet', sidecarArgs(args), {
       cwd: process.cwd(),
@@ -90,6 +95,7 @@ export class SidecarSession {
         .filter(Boolean)
 
       for (const line of lines) {
+        onDebug(`Sidecar stdout: ${line}`)
         try {
           const json = JSON.parse(line) as { type?: string; code?: string; message?: string }
           if (json.type === 'error') {
@@ -107,10 +113,12 @@ export class SidecarSession {
     this.child.stderr.on('data', (chunk) => {
       const line = chunk.toString('utf8').trim()
       if (!line) return
+      onDebug(`Sidecar stderr: ${line}`, 'warn')
       onError({ code: 'SIDECAR_UNAVAILABLE', message: line })
     })
 
     this.child.on('exit', (code) => {
+      onDebug(`Sidecar-Prozess beendet (exitCode=${code ?? 0}).`, code && code !== 0 ? 'error' : 'info')
       if (code && code !== 0) {
         onError({ code: 'SIDECAR_UNAVAILABLE', message: `Sidecar beendet mit Exit-Code ${code}.` })
       }
@@ -158,6 +166,7 @@ export class SidecarSession {
   }
 
   async stop(): Promise<void> {
+
     this.pipe?.destroy()
     this.pipe = null
     this.remainder = Buffer.alloc(0)

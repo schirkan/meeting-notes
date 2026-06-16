@@ -25,7 +25,7 @@ npm install
 1. Beispiel kopieren:
    - `config/azure.fixed.example.json` -> `config/azure.fixed.json`
    - `config/user-settings.example.json` -> `config/user-settings.json`
-2. `AZURE_SPEECH_KEY` als Umgebungsvariable setzen (oder die in `speechKeyEnvVar` konfigurierte Variable)
+2. In `config/azure.fixed.json` den Azure Speech API-Key direkt im Feld `speechKey` eintragen
 
 ## Entwicklung
 ```bash
@@ -55,6 +55,6 @@ Artefakte: `dist/portable/`
 5. Finales Transkript über **TXT in Clipboard** exportieren
 
 ## Bekannte Einschränkungen
-- Die App benötigt gültige Azure-Konfiguration und Schlüssel
+- Die App benötigt gültige Azure-Konfiguration inklusive direkt hinterlegtem Speech-Key
 - Hardwarematrix (integriertes Mic + kabelgebundenes Headset) muss auf Zielgerät validiert werden
 - Der portable Build ist PoC-haft und unsigniert

@@ -1,7 +1,7 @@
 export interface FixedAzureConfig {
   endpoint: string
   region: string
-  speechKeyEnvVar: string
+  speechKey: string
   recognitionMode: 'conversationTranscriber' | 'speechRecognizer'
   interimResults: boolean
 }
@@ -49,7 +49,7 @@ export function validateFixedAzureConfig(input: unknown): input is FixedAzureCon
   const hasRequiredStrings =
     typeof candidate.endpoint === 'string' && candidate.endpoint.length > 0 &&
     typeof candidate.region === 'string' && candidate.region.length > 0 &&
-    typeof candidate.speechKeyEnvVar === 'string' && candidate.speechKeyEnvVar.length > 0
+    typeof candidate.speechKey === 'string' && candidate.speechKey.length > 0
 
   const hasSupportedMode =
     candidate.recognitionMode === 'conversationTranscriber' ||

@@ -1,7 +1,9 @@
 import { app, BrowserWindow, clipboard, ipcMain } from 'electron'
+import { randomUUID } from 'node:crypto'
 import { join } from 'node:path'
 import {
   type AudioDeviceSnapshot,
+  type DebugLogEntry,
   type TranscriptError,
   type TranscriptSegment,
   type TranscriptStatus
@@ -17,6 +19,7 @@ let mainWindow: BrowserWindow | null = null
 let azureService: AzureTranscriptionService | null = null
 let devicesCache: AudioDeviceSnapshot = { inputs: [], outputs: [], fetchedAtIso: new Date(0).toISOString() }
 let userSettings = await loadUserSettings()
+const debugLog: DebugLogEntry[] = []
 
 const status: TranscriptStatus = {
   running: false
@@ -27,13 +30,34 @@ function broadcast(channel: string, payload: unknown): void {
   mainWindow.webContents.send(channel, payload)
 }
 
+function appendDebugLog(
+  source: DebugLogEntry['source'],
+  message: string,
+  level: DebugLogEntry['level'] = 'info'
+): void {
+  const entry: DebugLogEntry = {
+    id: randomUUID(),
+    timestampIso: new Date().toISOString(),
+    source,
+    level,
+    message
+  }
+
+  debugLog.unshift(entry)
+  if (debugLog.length > 300) debugLog.length = 300
+  broadcast('transcript:debug-log', entry)
+}
+
 function emitError(error: TranscriptError): void {
+  appendDebugLog('main', `${error.code}: ${error.message}`, 'error')
   broadcast('transcript:error', error)
 }
 
 async function refreshDevices(): Promise<AudioDeviceSnapshot> {
   try {
+    appendDebugLog('ipc', 'Device-Liste wird vom Sidecar angefordert.')
     devicesCache = await listSidecarDevices()
+    appendDebugLog('sidecar', `Device-Liste aktualisiert (${devicesCache.inputs.length} Inputs, ${devicesCache.outputs.length} Outputs).`)
     return devicesCache
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error)
@@ -98,10 +122,17 @@ function pushFrameToAzure(frame: DecodedFrame): void {
   }
 }
 
+function broadcastStatus(): void {
+  appendDebugLog('status', `Status geändert: ${status.running ? 'running' : 'stopped'}.`)
+  broadcast('transcript:status', status)
+}
+
 async function stopRecording(): Promise<TranscriptStatus> {
   try {
+    appendDebugLog('ipc', 'transcript:stop aufgerufen.')
     await sidecarSession.stop()
     if (azureService) {
+      appendDebugLog('main', 'AzureTranscriptionService.stop aufgerufen.')
       await azureService.stop()
       azureService = null
     }
@@ -112,11 +143,12 @@ async function stopRecording(): Promise<TranscriptStatus> {
 
   status.running = false
   delete status.startedAt
-  broadcast('transcript:status', status)
+  broadcastStatus()
   return status
 }
 
 async function startReal(): Promise<void> {
+  appendDebugLog('main', 'startReal aufgerufen.')
   const devices = await refreshDevices()
 
   if (devices.outputs.length === 0) {
@@ -130,8 +162,9 @@ async function startReal(): Promise<void> {
 
   azureService = new AzureTranscriptionService(fixedAzure, userSettings, (segment) => {
     broadcast('transcript:segment', segment)
-  }, emitError)
+  }, emitError, (message, level) => appendDebugLog('main', message, level))
 
+  appendDebugLog('main', 'AzureTranscriptionService.init aufgerufen.')
   await azureService.init()
 
   await sidecarSession.start(
@@ -144,12 +177,14 @@ async function startReal(): Promise<void> {
     (frame) => {
       pushFrameToAzure(frame)
     },
-    emitError
+    emitError,
+    (message, level) => appendDebugLog('sidecar', message, level)
   )
 }
 
 function registerIpc(): void {
   ipcMain.handle('transcript:start', async () => {
+    appendDebugLog('ipc', 'transcript:start aufgerufen.')
     try {
       if (status.running) return status
 
@@ -158,7 +193,7 @@ function registerIpc(): void {
 
       await startReal()
 
-      broadcast('transcript:status', status)
+      broadcastStatus()
       return status
     } catch (error) {
       status.running = false
@@ -178,15 +213,28 @@ function registerIpc(): void {
 
   ipcMain.handle('transcript:stop', async () => stopRecording())
 
-  ipcMain.handle('transcript:get-status', async () => status)
+  ipcMain.handle('transcript:get-status', async () => {
+    appendDebugLog('ipc', 'transcript:get-status aufgerufen.')
+    return status
+  })
+
+  ipcMain.handle('transcript:get-debug-log', async () => {
+    appendDebugLog('ipc', 'transcript:get-debug-log aufgerufen.')
+    return debugLog
+  })
 
   ipcMain.handle('transcript:get-devices', async () => refreshDevices())
 
-  ipcMain.handle('transcript:get-settings', async () => userSettings)
+  ipcMain.handle('transcript:get-settings', async () => {
+    appendDebugLog('ipc', 'transcript:get-settings aufgerufen.')
+    return userSettings
+  })
 
   ipcMain.handle('transcript:save-settings', async (_event, payload) => {
+    appendDebugLog('ipc', 'transcript:save-settings aufgerufen.')
     try {
       userSettings = await saveUserSettings(payload)
+      appendDebugLog('main', 'User-Settings gespeichert.')
       return userSettings
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error)
@@ -196,6 +244,7 @@ function registerIpc(): void {
   })
 
   ipcMain.handle('transcript:copy', async (_event, segments: TranscriptSegment[]) => {
+    appendDebugLog('ipc', `transcript:copy aufgerufen (${segments.length} Segmente).`)
     const finalSegments = segments.filter((segment) => segment.state === 'final')
     const content = finalSegments
       .map((segment) => `[${asGermanClock(segment.timestampIso)}] ${segment.source.toUpperCase()} | ${segment.speaker}: ${segment.text}`)
@@ -206,6 +255,7 @@ function registerIpc(): void {
 }
 
 app.whenReady().then(() => {
+  appendDebugLog('main', 'App ist bereit, IPC und BrowserWindow werden initialisiert.')
   registerIpc()
   createWindow()
 
@@ -215,6 +265,7 @@ app.whenReady().then(() => {
 })
 
 app.on('before-quit', () => {
+  appendDebugLog('main', 'before-quit empfangen.')
   void stopRecording()
 })
 

@@ -29,6 +29,14 @@ export interface TranscriptStatus {
   startedAt?: string
 }
 
+export interface DebugLogEntry {
+  id: string
+  timestampIso: string
+  source: 'main' | 'sidecar' | 'ipc' | 'status'
+  level: 'info' | 'warn' | 'error'
+  message: string
+}
+
 export type TranscriptErrorCode =
   | 'TRANSCRIPTION_STOP_FAILED'
   | 'LOOPBACK_REQUIRED'
@@ -116,6 +124,7 @@ export interface TranscriptApi {
   start: () => Promise<TranscriptStatus>
   stop: () => Promise<TranscriptStatus>
   getStatus: () => Promise<TranscriptStatus>
+  getDebugLog: () => Promise<DebugLogEntry[]>
   getDevices: () => Promise<AudioDeviceSnapshot>
   getSettings: () => Promise<import('./config-contract').UserSettings>
   saveSettings: (settings: import('./config-contract').UserSettings) => Promise<import('./config-contract').UserSettings>
@@ -123,4 +132,5 @@ export interface TranscriptApi {
   onSegment: (cb: (segment: TranscriptSegment) => void) => () => void
   onError: (cb: (error: TranscriptError) => void) => () => void
   onStatus: (cb: (status: TranscriptStatus) => void) => () => void
+  onDebugLog: (cb: (entry: DebugLogEntry) => void) => () => void
 }

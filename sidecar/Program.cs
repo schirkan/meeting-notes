@@ -3,6 +3,7 @@ using System.Text;
 using System.Text.Json;
 using NAudio.CoreAudioApi;
 using NAudio.Wave;
+using NAudio.Wave.SampleProviders;
 
 const int HeaderSize = 36;
 const uint Magic = 0x4D4E5043;
@@ -27,6 +28,7 @@ var sampleRate = argsMap.TryGetValue("--sample-rate", out var srRaw) && int.TryP
 
 var micId = argsMap.GetValueOrDefault("--mic-device-id");
 var speakerId = argsMap.GetValueOrDefault("--speaker-device-id");
+var targetWaveFormat = new WaveFormat(sampleRate, 16, 1);
 
 var cts = new CancellationTokenSource();
 Console.CancelKeyPress += (_, e) =>
@@ -61,6 +63,21 @@ try
 
     using var micCapture = new WasapiCapture(micDevice);
     using var speakerCapture = new WasapiLoopbackCapture(speakerDevice);
+    var micBufferedProvider = new BufferedWaveProvider(micCapture.WaveFormat)
+    {
+        DiscardOnBufferOverflow = true,
+        ReadFully = false
+    };
+    var speakerBufferedProvider = new BufferedWaveProvider(speakerCapture.WaveFormat)
+    {
+        DiscardOnBufferOverflow = true,
+        ReadFully = false
+    };
+    using var micResampler = new MediaFoundationResampler(micBufferedProvider, targetWaveFormat);
+    using var speakerResampler = new MediaFoundationResampler(speakerBufferedProvider, targetWaveFormat);
+
+    micResampler.ResamplerQuality = 60;
+    speakerResampler.ResamplerQuality = 60;
 
     long micSequence = 0;
     long speakerSequence = 0;
@@ -70,9 +87,13 @@ try
     {
         try
         {
+            micBufferedProvider.AddSamples(e.Buffer, 0, e.BytesRecorded);
+            var pcm16 = DrainResampledPcm(micResampler);
+            if (pcm16.Length == 0) return;
+
             lock (writeLock)
             {
-                WriteFrame(pipe, source: 1, sampleRate, channels: (byte)micCapture.WaveFormat.Channels, bitsPerSample: 16, sequence: ++micSequence, payload: e.Buffer.AsSpan(0, e.BytesRecorded));
+                WriteFrame(pipe, source: 1, sampleRate, channels: 1, bitsPerSample: 16, sequence: ++micSequence, payload: pcm16);
             }
         }
         catch (Exception ex)
@@ -85,9 +106,13 @@ try
     {
         try
         {
+            speakerBufferedProvider.AddSamples(e.Buffer, 0, e.BytesRecorded);
+            var pcm16 = DrainResampledPcm(speakerResampler);
+            if (pcm16.Length == 0) return;
+
             lock (writeLock)
             {
-                WriteFrame(pipe, source: 2, sampleRate, channels: (byte)speakerCapture.WaveFormat.Channels, bitsPerSample: 16, sequence: ++speakerSequence, payload: e.Buffer.AsSpan(0, e.BytesRecorded));
+                WriteFrame(pipe, source: 2, sampleRate, channels: 1, bitsPerSample: 16, sequence: ++speakerSequence, payload: pcm16);
             }
         }
         catch (Exception ex)
@@ -99,6 +124,9 @@ try
     micCapture.StartRecording();
     speakerCapture.StartRecording();
 
+    LogInfo("format", "mic_capture_format", $"Mic Capture Format: {micCapture.WaveFormat}");
+    LogInfo("format", "speaker_capture_format", $"Speaker Capture Format: {speakerCapture.WaveFormat}");
+    LogInfo("format", "azure_target_format", $"Azure Target Format: {targetWaveFormat}");
     LogInfo("status", "capturing", "Mic + Speaker Loopback aktiv.");
 
     while (!cts.Token.IsCancellationRequested)
@@ -207,6 +235,22 @@ static void WriteFrame(Stream stream, byte source, int sampleRate, byte channels
     stream.Write(header, 0, header.Length);
     stream.Write(payload);
     stream.Flush();
+}
+
+static byte[] DrainResampledPcm(IWaveProvider provider)
+{
+    var buffer = new byte[8192];
+    using var output = new MemoryStream();
+
+    while (true)
+    {
+        var read = provider.Read(buffer, 0, buffer.Length);
+        if (read <= 0) break;
+        output.Write(buffer, 0, read);
+        if (read < buffer.Length) break;
+    }
+
+    return output.ToArray();
 }
 
 static uint ComputeCrc32(ReadOnlySpan<byte> buffer)

@@ -1,7 +1,7 @@
 {
   "endpoint": "https://<resource>.cognitiveservices.azure.com/",
   "region": "westeurope",
-  "speechKeyEnvVar": "AZURE_SPEECH_KEY",
+  "speechKey": "<azure-speech-key>",
   "recognitionMode": "speechRecognizer",
   "interimResults": true
 }

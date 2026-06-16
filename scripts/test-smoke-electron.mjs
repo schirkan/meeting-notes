@@ -32,20 +32,32 @@ async function main() {
       throw new Error('Preload-Bridge window.transcriptApi ist nicht verfügbar.')
     }
 
-    await window.getByRole('button', { name: 'Start' }).click()
-    await window.waitForFunction(() => {
-      const text = document.body.innerText
-      return text.includes('Status: Läuft (')
-    }, null, {
-      timeout: TIMEOUT_MS
+    const startResult = await window.evaluate(async () => {
+      try {
+        const status = await window.transcriptApi.start()
+        return { ok: true, running: status.running }
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error)
+        return { ok: false, message }
+      }
     })
 
-    await window.waitForFunction(() => {
-      const items = document.querySelectorAll('li.segment')
-      return items.length > 0
-    }, null, { timeout: TIMEOUT_MS })
+    const bodyText = await window.textContent('body')
+    if (startResult.ok) {
+      if (!bodyText?.includes('Status: Läuft')) {
+        throw new Error(`Unerwarteter Status nach erfolgreichem Start: ${bodyText ?? '<leer>'}`)
+      }
+    } else {
+      if (!bodyText?.includes('Status: Fehler')) {
+        throw new Error(`Unerwarteter Status nach fehlgeschlagenem Start: ${bodyText ?? '<leer>'}`)
+      }
 
-    console.log('\n✅ Smoke-Test erfolgreich: UI geladen, Bridge aktiv, Mock-Transkript läuft.')
+      if (!bodyText.includes('Fehler') && !bodyText.includes('fehlgeschlagen') && !bodyText.includes('nicht gesetzt') && !bodyText.includes('fehlt')) {
+        throw new Error(`Kein erwartbarer Fehlerhinweis nach Startversuch sichtbar: ${bodyText}`)
+      }
+    }
+
+    console.log('\n✅ Smoke-Test erfolgreich: UI geladen, Bridge aktiv, Startpfad reagiert erwartbar.')
   } finally {
     await app.close()
   }

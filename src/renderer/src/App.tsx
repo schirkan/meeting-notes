@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import type { UserSettings } from '@shared/config-contract'
 import {
   type AudioDeviceSnapshot,
+  type DebugLogEntry,
   type TranscriptError,
   type TranscriptSegment,
   type TranscriptStatus
@@ -32,6 +33,7 @@ export function App() {
   const [runtimeIssue, setRuntimeIssue] = useState<string | null>(null)
   const [settings, setSettings] = useState<UserSettings>(initialSettings)
   const [devices, setDevices] = useState<AudioDeviceSnapshot>(initialDevices)
+  const [debugLog, setDebugLog] = useState<DebugLogEntry[]>([])
   const [settingsHint, setSettingsHint] = useState<string | null>(null)
   const [copyHint, setCopyHint] = useState<string | null>(null)
 
@@ -43,11 +45,12 @@ export function App() {
       return
     }
 
-    void Promise.all([transcriptApi.getStatus(), transcriptApi.getSettings(), transcriptApi.getDevices()])
-      .then(([nextStatus, nextSettings, nextDevices]) => {
+    void Promise.all([transcriptApi.getStatus(), transcriptApi.getSettings(), transcriptApi.getDevices(), transcriptApi.getDebugLog()])
+      .then(([nextStatus, nextSettings, nextDevices, nextDebugLog]) => {
         setStatus(nextStatus)
         setSettings(nextSettings)
         setDevices(nextDevices)
+        setDebugLog(nextDebugLog)
       })
       .catch((error) => {
         const message = error instanceof Error ? error.message : 'Initialdaten konnten nicht geladen werden.'
@@ -55,7 +58,17 @@ export function App() {
       })
 
     const unsubSegment = transcriptApi.onSegment((segment) => {
-      setSegments((prev) => [segment, ...prev].slice(0, 500))
+      setSegments((prev) => {
+        const withoutInterimForSource = prev.filter(
+          (entry) => !(entry.source === segment.source && entry.state === 'interim')
+        )
+
+        if (segment.state === 'final') {
+          return [segment, ...withoutInterimForSource].slice(0, 500)
+        }
+
+        return [segment, ...withoutInterimForSource].slice(0, 500)
+      })
     })
 
     const unsubError = transcriptApi.onError((error) => {
@@ -66,15 +79,20 @@ export function App() {
       setStatus(nextStatus)
     })
 
+    const unsubDebugLog = transcriptApi.onDebugLog((entry) => {
+      setDebugLog((prev) => [entry, ...prev].slice(0, 300))
+    })
+
     return () => {
       unsubSegment()
       unsubError()
       unsubStatus()
+      unsubDebugLog()
     }
   }, [])
 
   const statusLabel = useMemo(() => {
-    if (status.running) return 'Läuft (Sidecar + Azure)'
+    if (status.running) return 'Läuft'
     if (lastError) return 'Fehler'
     return 'Gestoppt'
   }, [lastError, status.running])
@@ -231,9 +249,30 @@ export function App() {
             {segments.map((segment) => (
               <li key={segment.id} className={`segment ${segment.source}`}>
                 <span className="meta">
-                  [{new Date(segment.timestampIso).toLocaleString('de-DE')}] {segment.source.toUpperCase()} · {segment.speaker} · {segment.state}
+                  [{new Date(segment.timestampIso).toLocaleString('de-DE')}] {segment.source.toUpperCase()} · {segment.state}
                 </span>
+                <div className="segment-badges">
+                  <span className={`speaker-badge ${segment.source}`}>{segment.speaker}</span>
+                </div>
                 <span>{segment.text}</span>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
+
+      <section className="panel debug-log-panel">
+        <h2>Sidecar Debug-Log</h2>
+        {debugLog.length === 0 ? (
+          <p className="empty">Noch keine Debug-Einträge.</p>
+        ) : (
+          <ul className="debug-log-list">
+            {debugLog.map((entry) => (
+              <li key={entry.id} className={`debug-log-entry ${entry.level}`}>
+                <span className="meta">
+                  [{new Date(entry.timestampIso).toLocaleString('de-DE')}] {entry.source.toUpperCase()} · {entry.level}
+                </span>
+                <span>{entry.message}</span>
               </li>
             ))}
           </ul>
