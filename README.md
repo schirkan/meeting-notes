@@ -5,11 +5,14 @@ PoC zur strukturierten Erfassung von Meeting-Transkripten (Electron + React + C#
 ## Features (aktueller Stand)
 - Start/Stop Recording im UI
 - Live-Transkript mit Mic/Speaker-Markierung + Interim/Final
+- Verbesserte Sprecherdarstellung (Speaker-Badges/Farben)
 - Fehler-/Status-Events via IPC
+- Sidecar/Main/IPC-Debug-Log direkt im UI
 - Persistente Einstellungen (Sprache, Devices)
 - TXT-Export (Clipboard)
 - C#-Sidecar (WASAPI Mic + Loopback) mit Frame-Protokoll über Named Pipe
-- Azure Speech Recognizer (Sidecar + Azure)
+- Azure Speech (Mic via SpeechRecognizer, Speaker optional via ConversationTranscriber)
+- Sidecar-Resampling auf Azure-kompatibles Zielformat (16 kHz, 16-bit, mono)
 
 ## Voraussetzungen
 - Node gemäß `.nvmrc` (empfohlen: 22 LTS)

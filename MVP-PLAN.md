@@ -2,7 +2,7 @@
 
 Stand: 05.06.2026
 
-## MVP 1 — App-Start, IPC mit Mock, React-UI
+## MVP 1 — App-Start, IPC mit simulierten Transkripten, React-UI
 
 ### Ziel
 Früh ein lauffähiges Ende-zu-Ende-Skelett bereitstellen (Electron Main ↔ IPC ↔ React Renderer), ohne C# und ohne Azure Speech.
@@ -10,13 +10,13 @@ Früh ein lauffähiges Ende-zu-Ende-Skelett bereitstellen (Electron Main ↔ IPC
 ### Reihenfolge
 1. Basics: Electron-App startet lokal
 2. IPC-Schnittstelle im Main bereitstellen
-3. Mock-Backend erzeugt zufällige Dummy-Transkriptsegmente
+3. Simulierter Transkriptgenerator erzeugt zufällige Dummy-Transkriptsegmente
 4. React-UI bindet IPC an und zeigt Live-Daten
 
 ### Manuelle Zwischenprüfungen
 - Checkpoint 0: `npm run check:node` bestätigt gültige Node-Version (empfohlen via `nvm use` auf 22).
 - Checkpoint 1: `npm run dev` startet Fenster ohne Fehler.
-- Checkpoint 2: Start/Stop im UI steuert den Mock-Service über IPC.
+- Checkpoint 2: Start/Stop im UI steuert den simulierten Service über IPC.
 - Checkpoint 3: Live-Liste zeigt zufällige Mic/Speaker-Segmente mit Zeitstempel.
 - Checkpoint 4: Fehlerkanal kann im UI dargestellt werden.
 
@@ -32,7 +32,7 @@ Früh ein lauffähiges Ende-zu-Ende-Skelett bereitstellen (Electron Main ↔ IPC
 - `transcript:status` → `TranscriptStatus`
 - `transcript:error` → `TranscriptError`
 
-### Mock-Daten
+### Simulierte Testdaten
 - Quelle: `mic` oder `speaker`
 - Zustand: `interim` oder `final`
 - Sprecher: einfache Dummy-Werte (`Du`, `Gegenüber`)
@@ -43,7 +43,7 @@ Früh ein lauffähiges Ende-zu-Ende-Skelett bereitstellen (Electron Main ↔ IPC
 ## MVP 2 — Echte Audio-/Speech-Anbindung
 
 ### Ziel
-Mock austauschen gegen echte Pipeline:
+Simulation austauschen gegen echte Pipeline:
 - C# Sidecar für Audio-Capture
 - Azure Speech SDK im Electron Main
 - bestehendes IPC/Eventmodell bleibt stabil

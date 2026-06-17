@@ -8,16 +8,19 @@
 - 02.06.2026: Technische Paketanalyse für Azure Speech SDK (JS/NPM) inkl. PoC-relevanter Methoden und Codebeispiele dokumentiert.
 - 03.06.2026: Variante-B-Architektur konkretisiert und dokumentiert (C#-Capture-Sidecar am Main Process, Speech SDK im Main, IPC-Streaming der Transkripte ins WebUI).
 - 03.06.2026: Specs für alle PoC-Tasks im Ordner `specs/` detailliert ausgefüllt und mit Tasks verknüpft.
-- 05.06.2026: Umsetzung in MVP 1 (Electron + IPC + Mock + UI) und MVP 2 (C# Sidecar + Azure Speech) aufgeteilt und dokumentiert.
-- 05.06.2026: MVP-1-Implementierung gestartet; Grundgerüst (Electron-Vite), IPC-Kanäle, Mock-Transkriptservice und erste React-Anbindung umgesetzt.
+- 05.06.2026: Umsetzung in MVP 1 (Electron + IPC + simulierte Transkripte + UI) und MVP 2 (C# Sidecar + Azure Speech) aufgeteilt und dokumentiert.
+- 05.06.2026: MVP-1-Implementierung gestartet; Grundgerüst (Electron-Vite), IPC-Kanäle, simulierter Transkriptservice und erste React-Anbindung umgesetzt.
 - 05.06.2026: Node-Setup gehärtet (LTS-Default via `.nvmrc`, Engine-Range + `engine-strict`, Version-Check-Skript) aufgrund reproduziertem Electron-Installproblem unter Node 24.16.x.
 - 05.06.2026: Troubleshooting-Dokument ergänzt (`TROUBLESHOOTING.md`) inkl. Downgrade-Pfad und Upstream-Referenzen; Statusprüfung auf neuere 24er-Node-Version durchgeführt.
 - 06.06.2026: IPC-Contract auf `1.1.0` erweitert (Contract-Version im Status + typisierte Fehlercodes mit Loopback-Blockern) und erfolgreich via Typecheck/Build/Smoke verifiziert.
 - 06.06.2026: Konfigurationsmodell festgezogen: fester Azure-JSON-Contract + persistente User-Settings als getrennte Dateien inkl. Defaults/Fallback-Regeln (`src/shared/config-contract.ts`, `config/*.example.json`, README-Abschnitt).
 - 06.06.2026: MVP-2-Basis umgesetzt: C#-Sidecar (WASAPI Mic + Loopback), Named-Pipe-Frame-Protokoll, Sidecar-Orchestrierung im Main, Azure-Speech-Anbindung (optional, konfigurationsbasiert) und erweitertes UI für Settings + TXT-Export.
 - 06.06.2026: QA/Delivery ergänzt: Latenzmess-Skript + Report (`context/latency-report.md`), Testmatrix (`context/test-matrix.md`) und unsignierter Portable-Build (`dist/portable/meeting-notes-win32-x64`, SHA256SUMS).
-- 10.06.2026: Mock-Service und Mock/Real-Umschaltung entfernt; Runtime läuft jetzt ausschließlich über Sidecar + Azure.
+- 10.06.2026: Simulations-Service und Simulations/Real-Umschaltung entfernt; Runtime läuft jetzt ausschließlich über Sidecar + Azure.
 - 10.06.2026: API-/Config-Versionierung im Transcript-/Config-Contract entfernt (kein `contractVersion`, keine `version`-Pflicht in `azure.fixed.json`).
+- 17.06.2026: Azure-Konfiguration vereinfacht: Speech-Key liegt direkt in `config/azure.fixed.json` (`speechKey`) statt über Env-Var.
+- 17.06.2026: Beobachtbarkeit und UX erweitert: Debug-Log-Ende-zu-Ende (Main/Sidecar/IPC) in UI sichtbar; Sprecherkennzeichnung in der UI verbessert (Badges/Farben, stabileres Interim/Final-Handling).
+- 17.06.2026: Transkriptions-/Audio-Pipeline gehärtet: differenzierter Recognizer-Einsatz (u. a. ConversationTranscriber für Speaker-Kanal), korrektes Stop-Verhalten je Modus, Sidecar-Resampling auf Azure-kompatibles Zielformat (16 kHz, 16-bit, mono), Smoke-Test auf Startpfad mit Erfolg/Fehlerfall erweitert.
 
 ## Scope
 - Notizen aus Meetings sammeln
@@ -40,15 +43,17 @@
 - 03.06.2026, 17:08 UTC: Spezifikation ergänzt und Entscheidung festgehalten: C#-Capture als Sidecar am Electron Main Process, Azure Speech SDK im Main Process, Transkript-Streaming per IPC ins WebUI.
 - 03.06.2026, 17:13 UTC: Umsetzungs-Backlog für den PoC erstellt (27 Tasks inkl. Parent-/Subtask-Struktur) und in `tasks.json` hinterlegt.
 - 03.06.2026, 20:16 UTC: Spezifikationsdokumente für alle 27 Tasks im Ordner `specs/` ausgearbeitet (Goal, Done-When, Approach, Abhängigkeiten) und `specFile`-Referenzen in `tasks.json` ergänzt.
-- 05.06.2026, 09:10 UTC: MVP-Aufteilung gemäß Nutzerpriorität dokumentiert (erst Basics + IPC mit Mock + React-UI, danach C#/Speech in MVP 2) und in DECISIONS/SPEC ergänzt.
-- 05.06.2026, 09:10 UTC: Implementierung von MVP 1 begonnen: Electron/React-Projektstruktur angelegt, IPC-Vertrag als Shared-Type eingeführt, Mock-Transcript-Service eingebaut, UI-Start/Stop + Live-Liste verdrahtet, Build/Typecheck erfolgreich.
+- 05.06.2026, 09:10 UTC: MVP-Aufteilung gemäß Nutzerpriorität dokumentiert (erst Basics + IPC mit simulierten Transkripten + React-UI, danach C#/Speech in MVP 2) und in DECISIONS/SPEC ergänzt.
+- 05.06.2026, 09:10 UTC: Implementierung von MVP 1 begonnen: Electron/React-Projektstruktur angelegt, IPC-Vertrag als Shared-Type eingeführt, simulierter Transcript-Service eingebaut, UI-Start/Stop + Live-Liste verdrahtet, Build/Typecheck erfolgreich.
 - 05.06.2026, 11:19 UTC: Root-Cause-Check mit frischem Hello-World-Electron-Vite-Projekt durchgeführt (gleicher Fehler reproduziert), anschließend Node-Version-Guardrails im Projekt ergänzt (`.nvmrc`, `.npmrc`, `engines`, `scripts/check-node.mjs`, README-Update).
 - 05.06.2026, 11:28 UTC: Relevante Dokumentation erweitert (README/DECISIONS/MVP-PLAN/TROUBLESHOOTING); Upstream-Status verifiziert: Node-Issue #63487 und Electron-Issue #51619 weiterhin offen, in Node-Releases aktuell kein neuer 24.x-Fixrelease > 24.16.0 sichtbar.
 - 05.06.2026, 16:30 UTC: Node-22-Testlauf abgeschlossen (Sample + `meeting-notes` jeweils mit gelöschtem `node_modules` neu installiert und erfolgreich gestartet); Lockfile in `meeting-notes` nach Neuinstallation aktualisiert und committed.
 - 05.06.2026, 17:33 UTC: Debug-Fix für nicht ladende Seite umgesetzt: falscher Preload-Pfad (`index.js`) auf tatsächliches Build-Artefakt (`index.mjs`) korrigiert; Typecheck/Build und Dev-Start erneut erfolgreich.
 - 05.06.2026, 17:54 UTC: Alternativer Debug-Ansatz für Dev-Start ergänzt (Renderer-Fehlerausgabe via `webContents.debugger`/CDP ins Terminal) und Ladeschaden final behoben (`sandbox: false` für Preload-Ausführung mit aktuellem ESM-Output).
-- 05.06.2026, 18:10 UTC: Ursache „leere Seite“ weiter abgesichert: Renderer robust gegen fehlende IPC-Bridge gemacht (sichtbare Laufzeitfehlermeldung statt White-Screen) und reproduzierbaren Smoke-Test erstellt (`scripts/test-smoke-electron.mjs`), der Build + App-Start + Bridge + Mock-Transkript prüft.
+- 05.06.2026, 18:10 UTC: Ursache „leere Seite“ weiter abgesichert: Renderer robust gegen fehlende IPC-Bridge gemacht (sichtbare Laufzeitfehlermeldung statt White-Screen) und reproduzierbaren Smoke-Test erstellt (`scripts/test-smoke-electron.mjs`), der Build + App-Start + Bridge + simuliertes Transkript prüft.
 - 06.06.2026, 07:xx UTC: T-102 abgeschlossen und auf Review gesetzt: Shared-IPC-Contract um `TRANSCRIPT_CONTRACT_VERSION` erweitert und Fehlercode-Katalog inkl. Loopback-Blocker (`LOOPBACK_REQUIRED`, `LOOPBACK_DEVICE_NOT_FOUND`, `LOOPBACK_INIT_FAILED`) ergänzt; Typecheck/Build/Smoke grün.
 - 06.06.2026, 07:xx UTC: T-103 umgesetzt und auf Review gesetzt: Config-Contract + Beispielkonfigurationen eingeführt (`src/shared/config-contract.ts`, `config/azure.fixed.example.json`, `config/user-settings.example.json`), lokale Runtime-Config in `.gitignore` ergänzt und Fallback-Regeln in README dokumentiert.
 - 06.06.2026, 09:xx UTC: Ausstehende Tasks T-200/T-300/T-400/T-500 implementiert und auf Review gesetzt: Sidecar + Main-Orchestrierung + UI-Settings/Clipboard + QA/Portable-Delivery. Verifikation: `npm run typecheck`, `npm run build`, `npm run test:smoke`, `npm run build:sidecar`, `npm run measure:latency`, `npm run dist:portable`.
-- 10.06.2026, 10:xx UTC: Mock-Service vollständig entfernt (Code + UI-Mode + Settings-Feld), API-/Contract-Versionfelder entfernt und auf Sidecar+Azure-only umgestellt. Verifikation: `npm run typecheck`, `npm run build`.
+- 10.06.2026, 10:xx UTC: Simulations-Service vollständig entfernt (Code + UI-Mode + Settings-Feld), API-/Contract-Versionfelder entfernt und auf Sidecar+Azure-only umgestellt. Verifikation: `npm run typecheck`, `npm run build`.
+- 17.06.2026, 07:50 UTC: Upstream-Änderungen aus `origin/main` integriert (Commits `e61eedf`, `a1acdf2`) und Projektdokumentation synchronisiert. Kernthemen: direkter Azure-`speechKey` in Fixed-Config, neues UI-Debug-Log inkl. IPC-Events, verbessertes Speaker-Labeling/Transcript-Merging, angepasster Transcriber-Stop-Pfad, Sidecar-Resampling (16 kHz/16-bit/mono), robusterer Smoke-Test.
+- 17.06.2026, 10:18 UTC: Pull-Änderungen nochmals explizit im Projektlog bestätigt/protokolliert (Commit-Referenzen: `e61eedf`, `a1acdf2`; Fokus: Speech-Key-Umstellung, Debug-Log in UI, ConversationTranscriber-Stop, Speaker-UX, Sidecar-Resampling, Smoke-Test-Härtung).

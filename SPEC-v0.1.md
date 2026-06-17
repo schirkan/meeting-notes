@@ -1,6 +1,6 @@
 # Spezifikation v0.1 — Audio-Transkriptions-PoC (Windows 11)
 
-Stand: 03.06.2026
+Stand: 17.06.2026
 Status: Entwurf (auf Basis der bisher bestätigten Entscheidungen)
 
 ## 1. Ziel
@@ -31,6 +31,10 @@ Ein portabler, unsignierter Desktop-PoC (Node.js + Electron + React), der parall
 ## 4. Transkription
 - API: Azure Speech
 - Mehrsprecher-Differenzierung (Diarization): Nice-to-have (Best Effort)
+- Recognizer-Strategie (Implementierungsstand):
+  - Mic-Kanal: `SpeechRecognizer`
+  - Speaker-Kanal: optional `ConversationTranscriber` (wenn entsprechend konfiguriert)
+- Der Stop-Pfad muss je nach Recognizer-Typ korrekt erfolgen (z. B. `stopContinuousRecognitionAsync` vs. `stopTranscribingAsync`).
 - Betriebsmodus:
   - bevorzugt: Echtzeit-Streaming
   - zulässig: Chunking-Alternative
@@ -39,6 +43,8 @@ Ein portabler, unsignierter Desktop-PoC (Node.js + Electron + React), der parall
 ## 5. UI (React)
 - Anzeige der Transkripte in der Weboberfläche
 - Darstellung mit Sprecher/Quelle, Zeitstempel, Text (sofern verfügbar)
+- Verbesserte Sprecherdarstellung über visuelle Speaker-Badges/Farben
+- Diagnostikbereich mit laufendem Debug-Log (Main/Sidecar/IPC)
 - Nutzer kann in der UI ändern:
   - Sprache
   - Audio-Devices (wenn nicht Default)
@@ -46,7 +52,15 @@ Ein portabler, unsignierter Desktop-PoC (Node.js + Electron + React), der parall
 
 ## 6. Konfiguration
 - API-Konfiguration (z. B. Azure-Parameter) über fest verdrahtete JSON-Datei
+- Azure-Key wird direkt in der Fixed-Config (`speechKey`) hinterlegt
 - Kein vollwertiger Konfigurationseditor in der UI für den PoC
+
+## 6.1 Audioformat für Azure-Ingest (Implementierungsstand)
+- Sidecar resampelt Mic- und Speaker-Frames auf ein einheitliches Zielformat:
+  - 16 kHz
+  - 16-bit PCM
+  - mono
+- Ziel: kompatibler, stabiler Ingest-Pfad für Azure Speech bei heterogenen Geräteformaten.
 
 ## 7. Export
 - Kein Dateiexport im PoC vorgesehen
@@ -71,7 +85,7 @@ Ein portabler, unsignierter Desktop-PoC (Node.js + Electron + React), der parall
 ### MVP 1
 - Electron-Anwendung startet lokal (Main + Renderer)
 - IPC-Vertrag steht und ist in Main/Preload/Renderer verdrahtet
-- Mock-Service liefert zufällige Dummy-Transkriptsegmente
+- Simulierter Transkriptservice liefert zufällige Dummy-Transkriptsegmente
 - React-UI zeigt Status + Live-Transkript über IPC
 - Manuelle Zwischenprüfungen sind Bestandteil des Flows
 
