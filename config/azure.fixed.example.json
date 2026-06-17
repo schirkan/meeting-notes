@@ -2,6 +2,11 @@
   "endpoint": "https://<resource>.cognitiveservices.azure.com/",
   "region": "westeurope",
   "speechKey": "<azure-speech-key>",
-  "recognitionMode": "speechRecognizer",
-  "interimResults": true
+  "interimResults": true,
+  "proxy": {
+    "host": "http://example.com",
+    "port": 8080,
+    "username": "myUser",
+    "password": "myPassword"
+  }
 }

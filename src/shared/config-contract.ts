@@ -1,9 +1,16 @@
+export interface AzureProxyConfig {
+  host: string
+  port: number
+  username?: string
+  password?: string
+}
+
 export interface FixedAzureConfig {
   endpoint: string
   region: string
   speechKey: string
-  recognitionMode: 'conversationTranscriber' | 'speechRecognizer'
   interimResults: boolean
+  proxy?: AzureProxyConfig
 }
 
 export interface UserSettings {
@@ -51,9 +58,17 @@ export function validateFixedAzureConfig(input: unknown): input is FixedAzureCon
     typeof candidate.region === 'string' && candidate.region.length > 0 &&
     typeof candidate.speechKey === 'string' && candidate.speechKey.length > 0
 
-  const hasSupportedMode =
-    candidate.recognitionMode === 'conversationTranscriber' ||
-    candidate.recognitionMode === 'speechRecognizer'
+  const hasValidProxy = (() => {
+    if (candidate.proxy == null) return true
+    if (typeof candidate.proxy !== 'object') return false
 
-  return hasRequiredStrings && hasSupportedMode && typeof candidate.interimResults === 'boolean'
+    const proxy = candidate.proxy as Partial<AzureProxyConfig>
+
+    return typeof proxy.host === 'string' && proxy.host.length > 0 &&
+      typeof proxy.port === 'number' && Number.isFinite(proxy.port) && proxy.port > 0 &&
+      (proxy.username === undefined || typeof proxy.username === 'string') &&
+      (proxy.password === undefined || typeof proxy.password === 'string')
+  })()
+
+  return hasRequiredStrings && typeof candidate.interimResults === 'boolean' && hasValidProxy
 }

@@ -39,6 +39,16 @@ export class AzureTranscriptionService {
     this.speechConfig.speechRecognitionLanguage = this.settings.language
     this.speechConfig.setProperty('SpeechServiceConnection_Endpoint', this.azureConfig.endpoint)
     this.speechConfig.setProperty('SpeechServiceResponse_DiarizeIntermediateResults', 'true')
+
+    if (this.azureConfig.proxy) {
+      this.speechConfig.setProxy(
+        this.azureConfig.proxy.host,
+        this.azureConfig.proxy.port,
+        this.azureConfig.proxy.username ?? '',
+        this.azureConfig.proxy.password ?? ''
+      )
+      this.onDebug?.(`Azure Speech Proxy konfiguriert (${this.azureConfig.proxy.host}:${this.azureConfig.proxy.port}).`)
+    }
   }
 
   private ensureStreamForFrame(frame: DecodedFrame): StreamState {
@@ -57,8 +67,7 @@ export class AzureTranscriptionService {
 
     const pushStream = this.sdk.AudioInputStream.createPushStream(format)
     const audioConfig = this.sdk.AudioConfig.fromStreamInput(pushStream)
-    const useConversationTranscriber =
-      frame.source === 'speaker' && this.azureConfig.recognitionMode === 'conversationTranscriber'
+    const useConversationTranscriber = frame.source === 'speaker'
 
     this.onDebug?.(
       `${useConversationTranscriber ? 'ConversationTranscriber' : 'SpeechRecognizer'} für ${frame.source} erstellt (sampleRate=${frame.sampleRate}, bits=${frame.bitsPerSample}, channels=${frame.channels}).`
