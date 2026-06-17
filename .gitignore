@@ -29,6 +29,7 @@ out/
 # .NET / sidecar build artifacts
 sidecar/bin/
 sidecar/obj/
+sidecar/publish/
 
 # Local runtime config (secrets / machine-specific)
 config/azure.fixed.json

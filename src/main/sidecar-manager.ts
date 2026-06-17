@@ -1,7 +1,9 @@
 import { randomUUID } from 'node:crypto'
 import { spawn, type ChildProcessWithoutNullStreams } from 'node:child_process'
+import { existsSync } from 'node:fs'
 import net from 'node:net'
 import { join } from 'node:path'
+import { app } from 'electron'
 import { splitFrames, type DecodedFrame } from './frame-protocol'
 import type { AudioDeviceSnapshot, TranscriptError } from '@shared/transcript-contract'
 
@@ -12,14 +14,28 @@ export interface SidecarStartOptions {
   sampleRate: number
 }
 
-function sidecarArgs(extra: string[] = []): string[] {
-  const projectPath = join(process.cwd(), 'sidecar', 'MeetingNotes.Sidecar.csproj')
-  return ['run', '--project', projectPath, '--', ...extra]
+function resolveSidecarExecutablePath(): string {
+  const devPath = join(process.cwd(), 'sidecar', 'publish', 'sidecar', 'MeetingNotes.Sidecar.exe')
+  const packagedCandidates = [
+    join(process.resourcesPath, 'sidecar', 'MeetingNotes.Sidecar.exe'),
+    join(process.resourcesPath, 'MeetingNotes.Sidecar.exe')
+  ]
+
+  const candidates = app.isPackaged ? packagedCandidates : [devPath, ...packagedCandidates]
+  const found = candidates.find((candidate) => existsSync(candidate))
+
+  if (found) return found
+
+  throw new Error(
+    `Sidecar-Binary nicht gefunden. Erwartete Pfade: ${candidates.join(', ')}. ` +
+    'Bitte zuerst `npm run publish:sidecar` ausführen.'
+  )
 }
 
 export async function listSidecarDevices(): Promise<AudioDeviceSnapshot> {
   return new Promise((resolve, reject) => {
-    const child = spawn('dotnet', sidecarArgs(['--list-devices']), {
+    const sidecarExe = resolveSidecarExecutablePath()
+    const child = spawn(sidecarExe, ['--list-devices'], {
       cwd: process.cwd(),
       stdio: ['ignore', 'pipe', 'pipe']
     })
@@ -82,7 +98,9 @@ export class SidecarSession {
 
     onDebug(`Sidecar-Prozess wird gestartet (sampleRate=${options.sampleRate}, language=${options.language}).`)
 
-    this.child = spawn('dotnet', sidecarArgs(args), {
+    const sidecarExe = resolveSidecarExecutablePath()
+
+    this.child = spawn(sidecarExe, args, {
       cwd: process.cwd(),
       stdio: ['pipe', 'pipe', 'pipe']
     })

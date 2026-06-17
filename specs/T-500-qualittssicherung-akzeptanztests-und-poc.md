@@ -3,7 +3,7 @@
 ## Kontext
 Status: review
 Priorität: medium
-Subtasks: T-501, T-502, T-503
+Subtasks: T-501, T-502, T-503, T-504
 Abhängigkeiten: -
 
 ## Goal
@@ -22,3 +22,4 @@ PoC validieren und als lauffähiges, nachvollziehbares Ergebnis übergeben.
 ## Log
 - 2026-06-03: Spec detailliert ausgefüllt.
 - 2026-06-06: QA/Delivery ausgeführt: `npm run measure:latency` + Report, `context/test-matrix.md`, `npm run dist:portable` inkl. `dist/portable/SHA256SUMS.txt`.
+- 2026-06-17: Delivery-Flow erweitert: Sidecar wird vor Portable-Build veröffentlicht und als Resource beigepackt (Runtime-only Zielsysteme ohne SDK unterstützt).

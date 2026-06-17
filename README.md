@@ -16,7 +16,8 @@ PoC zur strukturierten Erfassung von Meeting-Transkripten (Electron + React + C#
 
 ## Voraussetzungen
 - Node gemäß `.nvmrc` (empfohlen: 22 LTS)
-- .NET SDK (für Sidecar-Build)
+- .NET SDK (nur für lokale Entwicklung/Build des Sidecar)
+- .NET Runtime (win-x64) auf Zielsystemen
 
 ## Setup
 ```bash
@@ -35,6 +36,9 @@ npm install
 npm run dev
 ```
 
+Hinweis: `npm run dev` publisht das Sidecar vor dem Start automatisch als framework-dependent Build nach `sidecar/publish/sidecar`.
+Auf Zielsystemen wird das veröffentlichte Sidecar-EXE verwendet; dort ist kein .NET SDK erforderlich.
+
 ## Checks
 ```bash
 npm run typecheck
@@ -49,6 +53,8 @@ npm run build:sidecar
 npm run dist:portable
 ```
 Artefakte: `dist/portable/`
+
+Der Portable-Build enthält das veröffentlichte Sidecar als zusätzliche Resource.
 
 ## Runbook (Kurz)
 1. App starten (`npm run dev` oder portables Artefakt)

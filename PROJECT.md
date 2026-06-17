@@ -21,6 +21,7 @@
 - 17.06.2026: Azure-Konfiguration vereinfacht: Speech-Key liegt direkt in `config/azure.fixed.json` (`speechKey`) statt über Env-Var.
 - 17.06.2026: Beobachtbarkeit und UX erweitert: Debug-Log-Ende-zu-Ende (Main/Sidecar/IPC) in UI sichtbar; Sprecherkennzeichnung in der UI verbessert (Badges/Farben, stabileres Interim/Final-Handling).
 - 17.06.2026: Transkriptions-/Audio-Pipeline gehärtet: differenzierter Recognizer-Einsatz (u. a. ConversationTranscriber für Speaker-Kanal), korrektes Stop-Verhalten je Modus, Sidecar-Resampling auf Azure-kompatibles Zielformat (16 kHz, 16-bit, mono), Smoke-Test auf Startpfad mit Erfolg/Fehlerfall erweitert.
+- 17.06.2026: Sidecar-Laufzeit auf veröffentlichtes EXE umgestellt (framework-dependent): Dev/Portable nutzen Publish-Artefakte; Zielsystem braucht nur .NET Runtime, kein SDK.
 
 ## Scope
 - Notizen aus Meetings sammeln
@@ -57,3 +58,4 @@
 - 10.06.2026, 10:xx UTC: Simulations-Service vollständig entfernt (Code + UI-Mode + Settings-Feld), API-/Contract-Versionfelder entfernt und auf Sidecar+Azure-only umgestellt. Verifikation: `npm run typecheck`, `npm run build`.
 - 17.06.2026, 07:50 UTC: Upstream-Änderungen aus `origin/main` integriert (Commits `e61eedf`, `a1acdf2`) und Projektdokumentation synchronisiert. Kernthemen: direkter Azure-`speechKey` in Fixed-Config, neues UI-Debug-Log inkl. IPC-Events, verbessertes Speaker-Labeling/Transcript-Merging, angepasster Transcriber-Stop-Pfad, Sidecar-Resampling (16 kHz/16-bit/mono), robusterer Smoke-Test.
 - 17.06.2026, 10:18 UTC: Pull-Änderungen nochmals explizit im Projektlog bestätigt/protokolliert (Commit-Referenzen: `e61eedf`, `a1acdf2`; Fokus: Speech-Key-Umstellung, Debug-Log in UI, ConversationTranscriber-Stop, Speaker-UX, Sidecar-Resampling, Smoke-Test-Härtung).
+- 17.06.2026, 16:49 UTC: Spezifikation/Delivery auf Runtime-only-Zielsysteme erweitert: Sidecar-Startpfad auf veröffentlichtes EXE umgestellt (kein `dotnet run` in Runtime), neue Specs `T-207` und `T-504` angelegt, Doku zu SDK-vs-Runtime-Anforderungen aktualisiert.

@@ -7,7 +7,7 @@
   "main": "out/main/index.js",
   "scripts": {
     "preinstall": "node scripts/check-node.mjs",
-    "dev": "electron-vite dev",
+    "dev": "npm run publish:sidecar && electron-vite dev",
     "build": "electron-vite build",
     "preview": "electron-vite preview",
     "typecheck": "tsc --noEmit",
@@ -15,7 +15,8 @@
     "test:smoke": "node scripts/test-smoke-electron.mjs",
     "measure:latency": "node scripts/measure-latency.mjs",
     "build:sidecar": "dotnet build sidecar/MeetingNotes.Sidecar.csproj -c Release",
-    "dist:portable": "npm run build && electron-packager . meeting-notes --platform=win32 --arch=x64 --out=dist/portable --overwrite"
+    "publish:sidecar": "dotnet publish sidecar/MeetingNotes.Sidecar.csproj -c Release -r win-x64 --self-contained false -o sidecar/publish/sidecar",
+    "dist:portable": "npm run publish:sidecar && npm run build && electron-packager . meeting-notes --platform=win32 --arch=x64 --out=dist/portable --overwrite --extra-resource=sidecar/publish/sidecar"
   },
   "dependencies": {
     "microsoft-cognitiveservices-speech-sdk": "^1.44.1",

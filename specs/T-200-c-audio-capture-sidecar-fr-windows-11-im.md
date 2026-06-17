@@ -3,7 +3,7 @@
 ## Kontext
 Status: review
 Priorität: high
-Subtasks: T-201, T-202, T-203, T-204, T-205, T-206
+Subtasks: T-201, T-202, T-203, T-204, T-205, T-206, T-207
 Abhängigkeiten: -
 
 ## Goal
@@ -22,3 +22,4 @@ C#-Sidecar bereitstellen, der Mic + Speaker per WASAPI stabil als PCM an Electro
 ## Log
 - 2026-06-03: Spec detailliert ausgefüllt.
 - 2026-06-06: Sidecar als C#-Projekt (`sidecar/`) implementiert inkl. WASAPI-Capture, Device-Listing, Named-Pipe-Frames und Exit-/Fehlerbehandlung.
+- 2026-06-17: Runtime-Flow auf veröffentlichtes Sidecar-EXE umgestellt (framework-dependent publish, kein `dotnet run` im Laufzeitpfad).

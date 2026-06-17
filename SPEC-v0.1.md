@@ -24,6 +24,7 @@ Ein portabler, unsignierter Desktop-PoC (Node.js + Electron + React), der parall
 ## 3.1 Technische Architektur (Variante B, konkretisiert)
 - Ein **C# Capture-Service** wird als **Sidecar-Prozess** durch den Electron **Main Process** gestartet und gesteuert.
 - Der C#-Teil kann intern als DLL/Assemblies organisiert sein; die Integration in Electron erfolgt über den Sidecar-Prozess (nicht direkt im Renderer).
+- Laufzeitstart erfolgt über ein veröffentlichtes Sidecar-EXE; im Produktionspfad wird kein `dotnet run` verwendet.
 - Der Sidecar liefert Audio-Frames (PCM) an den Main Process; direkte Audio-Streaming-Wege vom C#-Teil in den Renderer sind nicht vorgesehen.
 - Das **Azure Speech SDK (JavaScript)** läuft im Electron **Main Process**.
 - Der Main Process sendet erkannte/interim/finale Transkriptsegmente per **IPC** an das WebUI (Renderer) für Live-Anzeige.
@@ -74,6 +75,13 @@ Ein portabler, unsignierter Desktop-PoC (Node.js + Electron + React), der parall
   - `>=22.12.0 <23`
   - `>=24.0.0 <24.16.0`
 - Hintergrund: Bekannter Electron-Installfehler unter Node 24.16.0+ (unvollständige Binary-Extraction); bis bestätigtem Upstream-Fix kein Einsatz von 24.16.0+
+
+## 8.1 Sidecar-Deployment (Runtime-Anforderung)
+- Lokale Entwicklung/Build: .NET SDK erforderlich, um das Sidecar zu veröffentlichen.
+- Zielsystem: .NET Runtime (win-x64) ausreichend; SDK ist dort nicht erforderlich.
+- Build-/Start-Flow:
+  - Dev: Sidecar wird nach `sidecar/publish/sidecar` veröffentlicht und von dort gestartet.
+  - Portable: veröffentlichte Sidecar-Dateien werden als Resource mit dem App-Artefakt ausgeliefert.
 
 ## 9. Nicht-Ziele (PoC)
 - Code-Signing
