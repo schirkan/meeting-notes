@@ -84,6 +84,7 @@ function createWindow(): void {
   mainWindow = new BrowserWindow({
     width: 1280,
     height: 860,
+    autoHideMenuBar: true,
     webPreferences: {
       preload: join(__dirname, '../preload/index.mjs'),
       contextIsolation: true,
@@ -93,6 +94,20 @@ function createWindow(): void {
   })
 
   attachRendererDiagnostics(mainWindow)
+  mainWindow.setMenuBarVisibility(false)
+
+  mainWindow.webContents.on('before-input-event', (event, input) => {
+    if (input.type !== 'keyDown' || input.key !== 'F12') return
+
+    event.preventDefault()
+
+    if (mainWindow?.webContents.isDevToolsOpened()) {
+      mainWindow.webContents.closeDevTools()
+      return
+    }
+
+    mainWindow?.webContents.openDevTools({ mode: 'detach' })
+  })
 
   if (process.env.ELECTRON_RENDERER_URL) {
     void mainWindow.loadURL(process.env.ELECTRON_RENDERER_URL)
@@ -114,6 +129,42 @@ function asGermanClock(iso: string): string {
     minute: '2-digit',
     second: '2-digit'
   })
+}
+
+function asGermanDate(iso: string): string {
+  return new Date(iso).toLocaleDateString('de-DE', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric'
+  })
+}
+
+function asGermanTime(iso: string): string {
+  return new Date(iso).toLocaleTimeString('de-DE', {
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit'
+  })
+}
+
+function formatDuration(startedAtIso: string, endedAtIso: string): string {
+  const startedAtMs = new Date(startedAtIso).getTime()
+  const endedAtMs = new Date(endedAtIso).getTime()
+
+  if (Number.isNaN(startedAtMs) || Number.isNaN(endedAtMs) || endedAtMs < startedAtMs) {
+    return '00:00'
+  }
+
+  const elapsedSeconds = Math.floor((endedAtMs - startedAtMs) / 1000)
+  const hours = Math.floor(elapsedSeconds / 3600)
+  const minutes = Math.floor((elapsedSeconds % 3600) / 60)
+  const seconds = elapsedSeconds % 60
+
+  if (hours > 0) {
+    return [hours, minutes, seconds].map((value) => String(value).padStart(2, '0')).join(':')
+  }
+
+  return [minutes, seconds].map((value) => String(value).padStart(2, '0')).join(':')
 }
 
 function pushFrameToAzure(frame: DecodedFrame): void {
@@ -246,9 +297,21 @@ function registerIpc(): void {
   ipcMain.handle('transcript:copy', async (_event, segments: TranscriptSegment[]) => {
     appendDebugLog('ipc', `transcript:copy aufgerufen (${segments.length} Segmente).`)
     const finalSegments = segments.filter((segment) => segment.state === 'final')
-    const content = finalSegments
-      .map((segment) => `[${asGermanClock(segment.timestampIso)}] ${segment.source.toUpperCase()} | ${segment.speaker}: ${segment.text}`)
+    const exportEndedAtIso = finalSegments.at(-1)?.timestampIso ?? new Date().toISOString()
+    const exportStartedAtIso = status.startedAt ?? exportEndedAtIso
+    const metadata = [
+      '---',
+      `datum: ${asGermanDate(exportStartedAtIso)}`,
+      `startzeit: ${asGermanTime(exportStartedAtIso)}`,
+      `dauer: ${formatDuration(exportStartedAtIso, exportEndedAtIso)}`,
+      '---'
+    ].join('\n')
+
+    const body = finalSegments
+      .map((segment) => `- [${asGermanClock(segment.timestampIso)}] ${segment.speaker}: ${segment.text}`)
       .join('\n')
+
+    const content = [metadata, body].filter((part) => part.length > 0).join('\n\n')
 
     clipboard.writeText(content)
   })

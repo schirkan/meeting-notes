@@ -8,6 +8,19 @@ import {
   type TranscriptStatus
 } from '@shared/transcript-contract'
 
+const languageOptions = [
+  { value: 'de-DE', label: 'Deutsch' },
+  { value: 'en-US', label: 'Englisch' },
+  { value: 'fr-FR', label: 'Französisch' },
+  { value: 'es-ES', label: 'Spanisch' },
+  { value: 'it-IT', label: 'Italienisch' },
+  { value: 'pt-BR', label: 'Portugiesisch' },
+  { value: 'nl-NL', label: 'Niederländisch' },
+  { value: 'pl-PL', label: 'Polnisch' },
+  { value: 'tr-TR', label: 'Türkisch' },
+  { value: 'ja-JP', label: 'Japanisch' }
+] as const
+
 const initialStatus: TranscriptStatus = {
   running: false
 }
@@ -36,6 +49,10 @@ export function App() {
   const [debugLog, setDebugLog] = useState<DebugLogEntry[]>([])
   const [settingsHint, setSettingsHint] = useState<string | null>(null)
   const [copyHint, setCopyHint] = useState<string | null>(null)
+  const [settingsOpen, setSettingsOpen] = useState(false)
+  const [debugOpen, setDebugOpen] = useState(false)
+  const [speakerAliases, setSpeakerAliases] = useState<Record<string, string>>({})
+  const [now, setNow] = useState(() => Date.now())
   const transcriptListRef = useRef<HTMLUListElement | null>(null)
 
   useEffect(() => {
@@ -131,6 +148,30 @@ export function App() {
     transcriptListRef.current.scrollTop = transcriptListRef.current.scrollHeight
   }, [segments])
 
+  useEffect(() => {
+    if (!status.running || !status.startedAt) return
+
+    const timer = window.setInterval(() => {
+      setNow(Date.now())
+    }, 1000)
+
+    return () => {
+      window.clearInterval(timer)
+    }
+  }, [status.running, status.startedAt])
+
+  useEffect(() => {
+    if (!copyHint) return
+
+    const timer = window.setTimeout(() => {
+      setCopyHint(null)
+    }, 5000)
+
+    return () => {
+      window.clearTimeout(timer)
+    }
+  }, [copyHint])
+
   const statusLabel = useMemo(() => {
     if (status.running) return 'Läuft'
     if (lastError) return 'Fehler'
@@ -181,7 +222,29 @@ export function App() {
     }
   }
 
+  const onToggleRecording = async () => {
+    if (status.running) {
+      await onStop()
+      return
+    }
+
+    await onStart()
+  }
+
   const finalCount = segments.filter((segment) => segment.state === 'final').length
+
+  const latestSegment = segments.at(-1) ?? null
+  const knownSpeakers = useMemo(
+    () =>
+      [
+        ...new Set(
+          segments
+            .map((segment) => segment.speaker.trim())
+            .filter((speaker) => speaker.length > 0 && speaker.toLowerCase() !== 'unknown')
+        )
+      ],
+    [segments]
+  )
 
   const getSpeakerClass = (speaker: string) => {
     const normalized = speaker.toLowerCase()
@@ -197,33 +260,47 @@ export function App() {
     return ''
   }
 
+  const getSpeakerLabel = (speaker: string) => {
+    const alias = speakerAliases[speaker]?.trim()
+    return alias && alias.length > 0 ? alias : speaker
+  }
+
+  const startedAtLabel = useMemo(() => {
+    if (!status.startedAt) return '---'
+
+    return new Date(status.startedAt).toLocaleTimeString('de-DE', {
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit'
+    })
+  }, [status.startedAt])
+
+  const durationLabel = useMemo(() => {
+    if (!status.startedAt) return '00:00'
+
+    const startedAtMs = new Date(status.startedAt).getTime()
+
+    if (Number.isNaN(startedAtMs)) return '00:00'
+
+    const elapsedSeconds = Math.max(0, Math.floor((now - startedAtMs) / 1000))
+    const hours = Math.floor(elapsedSeconds / 3600)
+    const minutes = Math.floor((elapsedSeconds % 3600) / 60)
+    const seconds = elapsedSeconds % 60
+
+    if (hours > 0) {
+      return [hours, minutes, seconds].map((value) => String(value).padStart(2, '0')).join(':')
+    }
+
+    return [minutes, seconds].map((value) => String(value).padStart(2, '0')).join(':')
+  }, [now, status.startedAt])
+
   return (
     <main className="container">
-      <header>
-        <h1>Meeting Notes – MVP</h1>
-        <p>Live-Transkript mit Sidecar + Azure, Device-Auswahl und TXT-Export.</p>
-      </header>
-
       {runtimeIssue && (
         <section className="error">
           <strong>RUNTIME_BRIDGE_MISSING</strong>: {runtimeIssue}
         </section>
       )}
-
-      <section className="controls">
-        <button type="button" onClick={onStart} disabled={status.running || !!runtimeIssue}>
-          Start
-        </button>
-        <button type="button" onClick={onStop} disabled={!status.running || !!runtimeIssue}>
-          Stop
-        </button>
-        <button type="button" onClick={onCopyTranscript} disabled={finalCount === 0}>
-          TXT in Clipboard
-        </button>
-        <div className="badge">Status: {statusLabel}</div>
-      </section>
-
-      {copyHint && <section className="hint">{copyHint}</section>}
 
       {lastError && (
         <section className="error">
@@ -231,107 +308,227 @@ export function App() {
         </section>
       )}
 
-      <section className="panel settings">
-        <h2>Einstellungen</h2>
-        <div className="row">
-          <label>
-            Sprache
-            <input
-              value={settings.language}
-              onChange={(event) => setSettings((prev) => ({ ...prev, language: event.target.value }))}
-              disabled={status.running}
-            />
-          </label>
-        </div>
-
-        <div className="row">
-          <label>
-            Mikrofon
-            <select
-              value={settings.devices.micId ?? ''}
-              onChange={(event) =>
-                setSettings((prev) => ({
-                  ...prev,
-                  devices: { ...prev.devices, micId: event.target.value || null }
-                }))
-              }
-              disabled={status.running}
-            >
-              <option value="">System-Default</option>
-              {devices.inputs.map((device) => (
-                <option key={device.id} value={device.id}>
-                  {device.name} {device.isDefault ? '(Default)' : ''}
-                </option>
+      <div className="layout-grid">
+        <section className="panel transcript-panel">
+          <div className="panel-header">
+            <h2>Transkript</h2>
+          </div>
+          {segments.length === 0 ? (
+            <p className="empty">Noch keine Daten. Starte den Service.</p>
+          ) : (
+            <ul ref={transcriptListRef} className="transcript-list">
+              {segments.map((segment) => (
+                <li key={segment.id} className={`segment ${segment.state}`}>
+                  <span className="segment-text">{segment.text}</span>
+                  <div className="segment-meta-column">
+                    <span className="meta">{new Date(segment.timestampIso).toLocaleTimeString('de-DE')}</span>
+                    <span className={`speaker-badge ${getSpeakerClass(segment.speaker)}`.trim()}>{getSpeakerLabel(segment.speaker)}</span>
+                  </div>
+                </li>
               ))}
-            </select>
-          </label>
+            </ul>
+          )}
+        </section>
 
-          <label>
-            Speaker Loopback
-            <select
-              value={settings.devices.speakerLoopbackId ?? ''}
-              onChange={(event) =>
-                setSettings((prev) => ({
-                  ...prev,
-                  devices: { ...prev.devices, speakerLoopbackId: event.target.value || null }
-                }))
-              }
-              disabled={status.running}
+        <aside className="sidebar-stack">
+          <section className="hero-status-card">
+            <strong>{statusLabel}</strong>
+            <span>{status.running ? 'Transkription aktiv' : 'Bereit zum Starten'}</span>
+            <div className="controls hero-controls">
+              <button
+                className={status.running ? 'secondary-button' : 'primary-button'}
+                type="button"
+                onClick={onToggleRecording}
+                disabled={!!runtimeIssue}
+              >
+                {status.running ? 'Stop' : 'Start'}
+              </button>
+              <button className="ghost-button" type="button" onClick={onCopyTranscript} disabled={finalCount === 0}>
+                TXT kopieren
+              </button>
+            </div>
+            <div className="hero-stats">
+              <div>
+                <span>Einträge</span>
+                <strong>{finalCount}</strong>
+              </div>
+              <div>
+                <span>Letzter Sprecher</span>
+                <strong>{latestSegment ? getSpeakerLabel(latestSegment.speaker) : '---'}</strong>
+              </div>
+              <div>
+                <span>Dauer</span>
+                <strong>{durationLabel}</strong>
+              </div>
+              <div>
+                <span>Startzeit</span>
+                <strong>{startedAtLabel}</strong>
+              </div>
+            </div>
+          </section>
+
+          <section className="panel settings">
+            <button
+              className="panel-toggle"
+              type="button"
+              onClick={() => setSettingsOpen((prev) => !prev)}
+              aria-expanded={settingsOpen}
             >
-              <option value="">System-Default</option>
-              {devices.outputs.map((device) => (
-                <option key={device.id} value={device.id}>
-                  {device.name} {device.isDefault ? '(Default)' : ''}
-                </option>
-              ))}
-            </select>
-          </label>
-        </div>
+              <h2>Einstellungen</h2>
+              <span className="toggle-indicator">{settingsOpen ? '−' : '+'}</span>
+            </button>
 
-        <button type="button" onClick={onSaveSettings} disabled={status.running}>
-          Einstellungen speichern
-        </button>
-        {settingsHint && <div className="hint">{settingsHint}</div>}
-      </section>
+            {settingsOpen && (
+              <>
+                {status.running && <div className="settings-inline-hint">Stop first to change settings.</div>}
 
-      <section className="panel">
-        <h2>Live-Transkript</h2>
-        {segments.length === 0 ? (
-          <p className="empty">Noch keine Daten. Starte den Service.</p>
-        ) : (
-          <ul ref={transcriptListRef} className="transcript-list">
-            {segments.map((segment) => (
-              <li key={segment.id} className={`segment ${segment.source}`}>
-                <span className="meta">
-                  [{new Date(segment.timestampIso).toLocaleString('de-DE')}] {segment.source.toUpperCase()} · {segment.state}
-                </span>
-                <div className="segment-badges">
-                  <span className={`speaker-badge ${segment.source} ${getSpeakerClass(segment.speaker)}`.trim()}>{segment.speaker}</span>
+                <div className="settings-block">
+                  <span className="field-label">Sprache</span>
+                  <div className="language-grid" role="radiogroup" aria-label="Sprache auswählen">
+                    {languageOptions.map((option) => (
+                      <label key={option.value} className={`language-option ${settings.language === option.value ? 'active' : ''}`}>
+                        <input
+                          type="radio"
+                          name="language"
+                          value={option.value}
+                          checked={settings.language === option.value}
+                          onChange={(event) => setSettings((prev) => ({ ...prev, language: event.target.value }))}
+                          disabled={status.running}
+                        />
+                        <span>{option.label}</span>
+                      </label>
+                    ))}
+                  </div>
                 </div>
-                <span>{segment.text}</span>
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
 
-      <section className="panel debug-log-panel">
-        <h2>Sidecar Debug-Log</h2>
-        {debugLog.length === 0 ? (
-          <p className="empty">Noch keine Debug-Einträge.</p>
-        ) : (
-          <ul className="debug-log-list">
-            {debugLog.map((entry) => (
-              <li key={entry.id} className={`debug-log-entry ${entry.level}`}>
-                <span className="meta">
-                  [{new Date(entry.timestampIso).toLocaleString('de-DE')}] {entry.source.toUpperCase()} · {entry.level}
-                </span>
-                <span>{entry.message}</span>
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
+                <div className="row">
+                  <label>
+                    Mikrofon
+                    <select
+                      value={settings.devices.micId ?? ''}
+                      onChange={(event) =>
+                        setSettings((prev) => ({
+                          ...prev,
+                          devices: { ...prev.devices, micId: event.target.value || null }
+                        }))
+                      }
+                      disabled={status.running}
+                    >
+                      <option value="">System-Default</option>
+                      {devices.inputs.map((device) => (
+                        <option key={device.id} value={device.id}>
+                          {device.name} {device.isDefault ? '(Default)' : ''}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+
+                  <label>
+                    Speaker Loopback
+                    <select
+                      value={settings.devices.speakerLoopbackId ?? ''}
+                      onChange={(event) =>
+                        setSettings((prev) => ({
+                          ...prev,
+                          devices: { ...prev.devices, speakerLoopbackId: event.target.value || null }
+                        }))
+                      }
+                      disabled={status.running}
+                    >
+                      <option value="">System-Default</option>
+                      {devices.outputs.map((device) => (
+                        <option key={device.id} value={device.id}>
+                          {device.name} {device.isDefault ? '(Default)' : ''}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                </div>
+
+                <button className="primary-button settings-save-button" type="button" onClick={onSaveSettings} disabled={status.running}>
+                  Einstellungen speichern
+                </button>
+                {settingsHint && <div className="hint">{settingsHint}</div>}
+              </>
+            )}
+          </section>
+
+          <section className="panel debug-log-panel">
+            <button
+              className="panel-toggle"
+              type="button"
+              onClick={() => setDebugOpen((prev) => !prev)}
+              aria-expanded={debugOpen}
+            >
+              <h2>Debug-Log</h2>
+              <span className="toggle-indicator">{debugOpen ? '−' : '+'}</span>
+            </button>
+
+            {debugOpen && (
+              <>
+                {debugLog.length === 0 ? (
+                  <p className="empty">Noch keine Debug-Einträge.</p>
+                ) : (
+                  <ul className="debug-log-list">
+                    {debugLog.map((entry) => (
+                      <li key={entry.id} className={`debug-log-entry ${entry.level}`}>
+                        <span className="meta">
+                          [{new Date(entry.timestampIso).toLocaleString('de-DE')}] {entry.source.toUpperCase()} · {entry.level}
+                        </span>
+                        <span>{entry.message}</span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </>
+            )}
+          </section>
+
+          <section className="panel speaker-mapping-panel">
+            <div className="panel-header">
+              <h2>Sprecherzuordnung</h2>
+              <span className="subtle-pill">{knownSpeakers.length} IDs</span>
+            </div>
+
+            {knownSpeakers.length === 0 ? (
+              <p className="empty">Sobald Sprecher erkannt wurden, kannst du ihnen hier Anzeigenamen zuweisen.</p>
+            ) : (
+              <div className="speaker-mapping-table-wrap">
+                <table className="speaker-mapping-table">
+                  <thead>
+                    <tr>
+                      <th scope="col">Speaker-ID</th>
+                      <th scope="col">Anzeigename</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {knownSpeakers.map((speaker) => (
+                      <tr key={speaker}>
+                        <td className="speaker-mapping-id">{speaker}</td>
+                        <td>
+                          <input
+                            type="text"
+                            value={speakerAliases[speaker] ?? ''}
+                            onChange={(event) =>
+                              setSpeakerAliases((prev) => ({
+                                ...prev,
+                                [speaker]: event.target.value
+                              }))
+                            }
+                            placeholder="Anzeigename"
+                          />
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </section>
+        </aside>
+      </div>
+
+      {copyHint && <div className="toast toast-visible">{copyHint}</div>}
     </main>
   )
 }
