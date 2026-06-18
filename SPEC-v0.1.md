@@ -1,6 +1,6 @@
 # Spezifikation v0.1 — Audio-Transkriptions-PoC (Windows 11)
 
-Stand: 17.06.2026
+Stand: 18.06.2026
 Status: Entwurf (auf Basis der bisher bestätigten Entscheidungen)
 
 ## 1. Ziel
@@ -34,7 +34,7 @@ Ein portabler, unsignierter Desktop-PoC (Node.js + Electron + React), der parall
 - Mehrsprecher-Differenzierung (Diarization): Nice-to-have (Best Effort)
 - Recognizer-Strategie (Implementierungsstand):
   - Mic-Kanal: `SpeechRecognizer`
-  - Speaker-Kanal: optional `ConversationTranscriber` (wenn entsprechend konfiguriert)
+  - Speaker-Kanal: `ConversationTranscriber` (fest, kein separater `recognitionMode`-Schalter mehr)
 - Der Stop-Pfad muss je nach Recognizer-Typ korrekt erfolgen (z. B. `stopContinuousRecognitionAsync` vs. `stopTranscribingAsync`).
 - Betriebsmodus:
   - bevorzugt: Echtzeit-Streaming
@@ -45,6 +45,7 @@ Ein portabler, unsignierter Desktop-PoC (Node.js + Electron + React), der parall
 - Anzeige der Transkripte in der Weboberfläche
 - Darstellung mit Sprecher/Quelle, Zeitstempel, Text (sofern verfügbar)
 - Verbesserte Sprecherdarstellung über visuelle Speaker-Badges/Farben
+- Sprecher-Alias-Mapping im UI (manuelle Anzeigenamen pro erkannter Speaker-ID)
 - Diagnostikbereich mit laufendem Debug-Log (Main/Sidecar/IPC)
 - Nutzer kann in der UI ändern:
   - Sprache
@@ -54,6 +55,7 @@ Ein portabler, unsignierter Desktop-PoC (Node.js + Electron + React), der parall
 ## 6. Konfiguration
 - API-Konfiguration (z. B. Azure-Parameter) über fest verdrahtete JSON-Datei
 - Azure-Key wird direkt in der Fixed-Config (`speechKey`) hinterlegt
+- Optionaler Azure-Proxy über `proxy.host`, `proxy.port` sowie optional `proxy.username`/`proxy.password`
 - Kein vollwertiger Konfigurationseditor in der UI für den PoC
 
 ## 6.1 Audioformat für Azure-Ingest (Implementierungsstand)
@@ -66,7 +68,7 @@ Ein portabler, unsignierter Desktop-PoC (Node.js + Electron + React), der parall
 ## 7. Export
 - Kein Dateiexport im PoC vorgesehen
 - Vollständiges Transkript per Copy-to-Clipboard als TXT
-- Exportinhalt: Sprecher/Quelle, Uhrzeit, Text (sofern verfügbar)
+- Exportinhalt: YAML-ähnlicher Header (`datum`, `startzeit`, `dauer`) plus Segmentliste mit Sprecher/Uhrzeit/Text
 - Zeitformat: deutsches Datums-/Zeitformat
 
 ## 8. Entwicklungsumgebung (Stabilitätsvorgabe)

@@ -22,6 +22,10 @@
 - 17.06.2026: Beobachtbarkeit und UX erweitert: Debug-Log-Ende-zu-Ende (Main/Sidecar/IPC) in UI sichtbar; Sprecherkennzeichnung in der UI verbessert (Badges/Farben, stabileres Interim/Final-Handling).
 - 17.06.2026: Transkriptions-/Audio-Pipeline gehärtet: differenzierter Recognizer-Einsatz (u. a. ConversationTranscriber für Speaker-Kanal), korrektes Stop-Verhalten je Modus, Sidecar-Resampling auf Azure-kompatibles Zielformat (16 kHz, 16-bit, mono), Smoke-Test auf Startpfad mit Erfolg/Fehlerfall erweitert.
 - 17.06.2026: Sidecar-Laufzeit auf veröffentlichtes EXE umgestellt (framework-dependent): Dev/Portable nutzen Publish-Artefakte; Zielsystem braucht nur .NET Runtime, kein SDK.
+- 18.06.2026: Upstream-Stand synchronisiert (Commits `9b316b6`, `954598f`) und inhaltlich analysiert.
+- 18.06.2026: Konfigurations-/Speech-Pfad aktualisiert: optionaler Azure-Proxy (`proxy`) im Fixed-Contract, `recognitionMode` entfernt, feste Recognizer-Strategie Mic=`SpeechRecognizer`/Speaker=`ConversationTranscriber`.
+- 18.06.2026: UI/Export aktualisiert: neues Layout (Hero/Sidebar), einklappbare Panels, Speaker-Alias-Mapping, Export mit Metadaten-Header (`datum`, `startzeit`, `dauer`) + Segmentliste.
+- 18.06.2026: Projektdokumentation und betroffene Specs synchronisiert (`README.md`, `SPEC-v0.1.md`, `DECISIONS.md`, `specs/T-103.md`, `specs/T-303.md`, `specs/T-400*.md`, `specs/T-401.md`, `specs/T-402.md`, `specs/T-404.md`).
 
 ## Scope
 - Notizen aus Meetings sammeln
@@ -59,3 +63,5 @@
 - 17.06.2026, 07:50 UTC: Upstream-Änderungen aus `origin/main` integriert (Commits `e61eedf`, `a1acdf2`) und Projektdokumentation synchronisiert. Kernthemen: direkter Azure-`speechKey` in Fixed-Config, neues UI-Debug-Log inkl. IPC-Events, verbessertes Speaker-Labeling/Transcript-Merging, angepasster Transcriber-Stop-Pfad, Sidecar-Resampling (16 kHz/16-bit/mono), robusterer Smoke-Test.
 - 17.06.2026, 10:18 UTC: Pull-Änderungen nochmals explizit im Projektlog bestätigt/protokolliert (Commit-Referenzen: `e61eedf`, `a1acdf2`; Fokus: Speech-Key-Umstellung, Debug-Log in UI, ConversationTranscriber-Stop, Speaker-UX, Sidecar-Resampling, Smoke-Test-Härtung).
 - 17.06.2026, 16:49 UTC: Spezifikation/Delivery auf Runtime-only-Zielsysteme erweitert: Sidecar-Startpfad auf veröffentlichtes EXE umgestellt (kein `dotnet run` in Runtime), neue Specs `T-207` und `T-504` angelegt, Doku zu SDK-vs-Runtime-Anforderungen aktualisiert.
+- 18.06.2026, 05:34 UTC: Repository auf `origin/main` synchronisiert (`b27aee2 -> 954598f`), neue Commits `9b316b6` und `954598f` inhaltlich analysiert.
+- 18.06.2026, 05:45 UTC: Doku/Specs auf Commit-Stand aktualisiert (Proxy-Support, Wegfall `recognitionMode`, UI-Refresh inkl. Speaker-Alias-Mapping, Clipboard-Export mit Header-Metadaten).

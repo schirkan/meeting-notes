@@ -4,14 +4,15 @@ PoC zur strukturierten Erfassung von Meeting-Transkripten (Electron + React + C#
 
 ## Features (aktueller Stand)
 - Start/Stop Recording im UI
-- Live-Transkript mit Mic/Speaker-Markierung + Interim/Final
-- Verbesserte Sprecherdarstellung (Speaker-Badges/Farben)
+- Live-Transkript mit Interim/Final und verbesserter Lesbarkeit
+- Verbesserte Sprecherdarstellung (Speaker-Badges/Farben) inkl. Alias-Mapping
 - Fehler-/Status-Events via IPC
 - Sidecar/Main/IPC-Debug-Log direkt im UI
 - Persistente Einstellungen (Sprache, Devices)
-- TXT-Export (Clipboard)
+- TXT-Export (Clipboard) inkl. Header-Metadaten (Datum, Startzeit, Dauer)
 - C#-Sidecar (WASAPI Mic + Loopback) mit Frame-Protokoll über Named Pipe
-- Azure Speech (Mic via SpeechRecognizer, Speaker optional via ConversationTranscriber)
+- Azure Speech (Mic via SpeechRecognizer, Speaker via ConversationTranscriber)
+- Optionale Proxy-Konfiguration für Azure Speech (`proxy.host`/`proxy.port` + optional Auth)
 - Sidecar-Resampling auf Azure-kompatibles Zielformat (16 kHz, 16-bit, mono)
 
 ## Voraussetzungen
@@ -30,6 +31,7 @@ npm install
    - `config/azure.fixed.example.json` -> `config/azure.fixed.json`
    - `config/user-settings.example.json` -> `config/user-settings.json`
 2. In `config/azure.fixed.json` den Azure Speech API-Key direkt im Feld `speechKey` eintragen
+3. Optional: Proxy für Azure Speech unter `proxy` konfigurieren (`host`, `port`, optional `username`/`password`)
 
 ## Entwicklung
 ```bash
@@ -61,7 +63,7 @@ Der Portable-Build enthält das veröffentlichte Sidecar als zusätzliche Resour
 2. Settings prüfen: Sprache, Mic, Speaker-Loopback
 3. Start klicken
 4. Bei Fehlercode `LOOPBACK_*`: Audio-Output/Device prüfen, danach erneut starten
-5. Finales Transkript über **TXT in Clipboard** exportieren
+5. Finales Transkript über **TXT kopieren** exportieren
 
 ## Bekannte Einschränkungen
 - Die App benötigt gültige Azure-Konfiguration inklusive direkt hinterlegtem Speech-Key
