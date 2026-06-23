@@ -347,12 +347,18 @@ export function App() {
   const getSpeakerClass = (speaker: string) => {
     const normalized = speaker.toLowerCase()
 
-    if (normalized.includes('guest-1')) return 'speaker-guest-1'
-    if (normalized.includes('guest-2')) return 'speaker-guest-2'
-    if (normalized.includes('guest-3')) return 'speaker-guest-3'
-    if (normalized.includes('guest-4')) return 'speaker-guest-4'
     if (normalized.includes('unknown')) return 'speaker-unknown'
     if (normalized.includes('self')) return 'speaker-mic-self'
+
+    const numberedSpeakerMatch = normalized.match(/(?:guest|speaker|participant|user)[\s:_-]?(\d{1,3})/)
+    if (numberedSpeakerMatch) {
+      const parsed = Number(numberedSpeakerMatch[1])
+      if (Number.isFinite(parsed) && parsed >= 1) {
+        const normalizedIndex = ((parsed - 1) % 30) + 1
+        return `speaker-guest-${normalizedIndex}`
+      }
+    }
+
     if (normalized.includes('guest')) return 'speaker-guest-1'
 
     return ''
