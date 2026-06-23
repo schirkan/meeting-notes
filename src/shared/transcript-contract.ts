@@ -5,6 +5,7 @@ export interface TranscriptSegment {
   id: string
   source: TranscriptSource
   speaker: string
+  language?: string
   timestampIso: string
   text: string
   state: TranscriptState

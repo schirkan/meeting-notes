@@ -26,6 +26,8 @@
 - 18.06.2026: Konfigurations-/Speech-Pfad aktualisiert: optionaler Azure-Proxy (`proxy`) im Fixed-Contract, `recognitionMode` entfernt, feste Recognizer-Strategie Mic=`SpeechRecognizer`/Speaker=`ConversationTranscriber`.
 - 18.06.2026: UI/Export aktualisiert: neues Layout (Hero/Sidebar), einklappbare Panels, Speaker-Alias-Mapping, Export mit Metadaten-Header (`datum`, `startzeit`, `dauer`) + Segmentliste.
 - 18.06.2026: Projektdokumentation und betroffene Specs synchronisiert (`README.md`, `SPEC-v0.1.md`, `DECISIONS.md`, `specs/T-103.md`, `specs/T-303.md`, `specs/T-400*.md`, `specs/T-401.md`, `specs/T-402.md`, `specs/T-404.md`).
+- 23.06.2026: Git-Sync auf `origin/main` (`b3772d1 -> 167af50`) durchgeführt und Build-/Typecheck-/Smoke-Gates erneut grün verifiziert.
+- 23.06.2026: Continuous Language Identification (LID) in Azure-Recognizern aktiviert (inkl. `LanguageIdMode=Continuous` + AutoDetect-Konfiguration), erkannte Sprache in Segmenten/Export ergänzt sowie Smoke-Test auf aktuelles UI angepasst.
 
 ## Scope
 - Notizen aus Meetings sammeln
@@ -65,3 +67,5 @@
 - 17.06.2026, 16:49 UTC: Spezifikation/Delivery auf Runtime-only-Zielsysteme erweitert: Sidecar-Startpfad auf veröffentlichtes EXE umgestellt (kein `dotnet run` in Runtime), neue Specs `T-207` und `T-504` angelegt, Doku zu SDK-vs-Runtime-Anforderungen aktualisiert.
 - 18.06.2026, 05:34 UTC: Repository auf `origin/main` synchronisiert (`b27aee2 -> 954598f`), neue Commits `9b316b6` und `954598f` inhaltlich analysiert.
 - 18.06.2026, 05:45 UTC: Doku/Specs auf Commit-Stand aktualisiert (Proxy-Support, Wegfall `recognitionMode`, UI-Refresh inkl. Speaker-Alias-Mapping, Clipboard-Export mit Header-Metadaten).
+- 23.06.2026, 17:47 UTC: Repository per Fast-Forward synchronisiert (`b3772d1 -> 167af50`), anschließend `npm run typecheck`, `npm run build` und `npm run test:smoke` erfolgreich ausgeführt.
+- 23.06.2026, 17:58 UTC: Continuous LID + Diarization-Pfad aktualisiert (AutoDetect in SpeechRecognizer + ConversationTranscriber, `SpeechServiceConnection_LanguageIdMode=Continuous`, Sprachkennzeichnung im UI/Export), Smoke-Test auf aktuelles UI repariert.

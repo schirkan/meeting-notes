@@ -322,6 +322,7 @@ export function App() {
                   <span className="segment-text">{segment.text}</span>
                   <div className="segment-meta-column">
                     <span className="meta">{new Date(segment.timestampIso).toLocaleTimeString('de-DE')}</span>
+                    {segment.language && <span className="meta">{segment.language}</span>}
                     <span className={`speaker-badge ${getSpeakerClass(segment.speaker)}`.trim()}>{getSpeakerLabel(segment.speaker)}</span>
                   </div>
                 </li>

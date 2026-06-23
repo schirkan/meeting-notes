@@ -12,11 +12,21 @@ type StreamState = {
 }
 
 type RecognitionEvent = {
-  result?: {
-    text?: string
-    speakerId?: string
-  }
+  result?: any
 }
+
+const CONTINUOUS_LID_CANDIDATES = [
+  'de-DE',
+  'en-US',
+  'fr-FR',
+  'es-ES',
+  'it-IT',
+  'pt-BR',
+  'nl-NL',
+  'pl-PL',
+  'tr-TR',
+  'ja-JP'
+]
 
 export class AzureTranscriptionService {
   private sdk: AzureSdk | null = null
@@ -39,6 +49,7 @@ export class AzureTranscriptionService {
     this.speechConfig.speechRecognitionLanguage = this.settings.language
     this.speechConfig.setProperty('SpeechServiceConnection_Endpoint', this.azureConfig.endpoint)
     this.speechConfig.setProperty('SpeechServiceResponse_DiarizeIntermediateResults', 'true')
+    this.speechConfig.setProperty('SpeechServiceConnection_LanguageIdMode', 'Continuous')
 
     if (this.azureConfig.proxy) {
       this.speechConfig.setProxy(
@@ -68,13 +79,18 @@ export class AzureTranscriptionService {
     const pushStream = this.sdk.AudioInputStream.createPushStream(format)
     const audioConfig = this.sdk.AudioConfig.fromStreamInput(pushStream)
     const useConversationTranscriber = frame.source === 'speaker'
+    const autoDetectSourceLanguageConfig = this.sdk.AutoDetectSourceLanguageConfig.fromLanguages(this.getLidCandidates())
 
     this.onDebug?.(
       `${useConversationTranscriber ? 'ConversationTranscriber' : 'SpeechRecognizer'} für ${frame.source} erstellt (sampleRate=${frame.sampleRate}, bits=${frame.bitsPerSample}, channels=${frame.channels}).`
     )
 
     if (useConversationTranscriber) {
-      const recognizer = new this.sdk.ConversationTranscriber(this.speechConfig, audioConfig)
+      const recognizer = this.sdk.ConversationTranscriber.FromConfig(
+        this.speechConfig,
+        autoDetectSourceLanguageConfig,
+        audioConfig
+      )
 
       recognizer.transcribing = (_sender: unknown, event: RecognitionEvent) => {
         const text = event.result?.text?.trim()
@@ -104,14 +120,19 @@ export class AzureTranscriptionService {
       return created
     }
 
-    const recognizer = new this.sdk.SpeechRecognizer(this.speechConfig, audioConfig)
+    const recognizer = this.sdk.SpeechRecognizer.FromConfig(
+      this.speechConfig,
+      autoDetectSourceLanguageConfig,
+      audioConfig
+    )
 
     recognizer.recognizing = (_sender: unknown, event: RecognitionEvent) => {
       this.logMissingSpeakerId(frame.source, event)
 
       const text = event.result?.text?.trim()
       if (!text) return
-      this.onSegment(this.mapResult(frame.source, text, 'interim', 0.8))
+      const language = this.extractDetectedLanguageFromSpeechResult(event.result)
+      this.onSegment(this.mapResult(frame.source, text, 'interim', 0.8, language))
     }
 
     recognizer.recognized = (_sender: unknown, event: RecognitionEvent) => {
@@ -119,7 +140,8 @@ export class AzureTranscriptionService {
 
       const text = event.result?.text?.trim()
       if (!text) return
-      this.onSegment(this.mapResult(frame.source, text, 'final', 0.9))
+      const language = this.extractDetectedLanguageFromSpeechResult(event.result)
+      this.onSegment(this.mapResult(frame.source, text, 'final', 0.9, language))
     }
 
     recognizer.canceled = (_sender: unknown, event: { errorDetails?: string }) => {
@@ -202,10 +224,16 @@ export class AzureTranscriptionService {
       this.onDebug?.(`ConversationTranscriber Speaker-Label für ${source}: ${speakerId}`)
     }
 
+    const language = this.extractDetectedLanguageFromConversationResult(result)
+    if (language) {
+      this.onDebug?.(`ConversationTranscriber Sprache für ${source}: ${language}`)
+    }
+
     return {
       id: randomUUID(),
       source,
       speaker: speakerId || 'unknown',
+      language,
       timestampIso: new Date().toISOString(),
       text,
       state,
@@ -227,16 +255,47 @@ export class AzureTranscriptionService {
     source: TranscriptSource,
     text: string,
     state: TranscriptSegment['state'],
-    confidence: number
+    confidence: number,
+    language?: string
   ): TranscriptSegment {
     return {
       id: randomUUID(),
       source,
       speaker: source === 'mic' ? 'self' : 'guest',
+      language,
       timestampIso: new Date().toISOString(),
       text,
       state,
       confidence
+    }
+  }
+
+  private getLidCandidates(): string[] {
+    const preferred = this.settings.language.trim()
+    return [...new Set([preferred, ...CONTINUOUS_LID_CANDIDATES])]
+  }
+
+  private extractDetectedLanguageFromSpeechResult(result: RecognitionEvent['result']): string | undefined {
+    if (!result || !this.sdk) return undefined
+
+    try {
+      const detected = this.sdk.AutoDetectSourceLanguageResult.fromResult(result as any)
+      const language = detected?.language?.trim()
+      return language && language.length > 0 ? language : undefined
+    } catch {
+      return undefined
+    }
+  }
+
+  private extractDetectedLanguageFromConversationResult(result: RecognitionEvent['result']): string | undefined {
+    if (!result || !this.sdk) return undefined
+
+    try {
+      const detected = this.sdk.AutoDetectSourceLanguageResult.fromConversationTranscriptionResult(result as any)
+      const language = detected?.language?.trim()
+      return language && language.length > 0 ? language : undefined
+    } catch {
+      return undefined
     }
   }
 }

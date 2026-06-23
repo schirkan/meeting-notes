@@ -20,11 +20,11 @@ async function main() {
   try {
     const window = await app.firstWindow()
 
-    await window.waitForSelector('h1', { timeout: TIMEOUT_MS })
-    const heading = await window.textContent('h1')
+    await window.waitForSelector('main.container', { timeout: TIMEOUT_MS })
+    const transcriptHeaderCount = await window.locator('h2', { hasText: 'Transkript' }).count()
 
-    if (!heading?.includes('Meeting Notes')) {
-      throw new Error(`Unerwartete Überschrift: ${heading ?? '<leer>'}`)
+    if (transcriptHeaderCount === 0) {
+      throw new Error('UI geladen, aber erwarteter Bereich "Transkript" fehlt.')
     }
 
     const bridgeAvailable = await window.evaluate(() => typeof window.transcriptApi?.start === 'function')
@@ -44,11 +44,11 @@ async function main() {
 
     const bodyText = await window.textContent('body')
     if (startResult.ok) {
-      if (!bodyText?.includes('Status: Läuft')) {
+      if (!bodyText?.includes('Läuft')) {
         throw new Error(`Unerwarteter Status nach erfolgreichem Start: ${bodyText ?? '<leer>'}`)
       }
     } else {
-      if (!bodyText?.includes('Status: Fehler')) {
+      if (!bodyText?.includes('Fehler')) {
         throw new Error(`Unerwarteter Status nach fehlgeschlagenem Start: ${bodyText ?? '<leer>'}`)
       }
 

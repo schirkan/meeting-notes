@@ -308,7 +308,10 @@ function registerIpc(): void {
     ].join('\n')
 
     const body = finalSegments
-      .map((segment) => `- [${asGermanClock(segment.timestampIso)}] ${segment.speaker}: ${segment.text}`)
+      .map((segment) => {
+        const languageSuffix = segment.language ? ` (${segment.language})` : ''
+        return `- [${asGermanClock(segment.timestampIso)}] ${segment.speaker}${languageSuffix}: ${segment.text}`
+      })
       .join('\n')
 
     const content = [metadata, body].filter((part) => part.length > 0).join('\n\n')
