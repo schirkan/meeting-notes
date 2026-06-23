@@ -15,6 +15,13 @@ type RecognitionEvent = {
   result?: any
 }
 
+type CanceledEvent = {
+  reason?: string | number
+  errorCode?: string | number
+  errorDetails?: string
+  sessionId?: string
+}
+
 const CONTINUOUS_LID_CANDIDATES = [
   'de-DE',
   'en-US',
@@ -33,6 +40,7 @@ export class AzureTranscriptionService {
   private speechConfig: any = null
   private streams = new Map<TranscriptSource, StreamState>()
   private missingSpeakerIdLogged = new Set<TranscriptSource>()
+  private firstFrameLogged = new Set<TranscriptSource>()
 
   constructor(
     private readonly azureConfig: FixedAzureConfig,
@@ -43,6 +51,7 @@ export class AzureTranscriptionService {
   ) { }
 
   async init(): Promise<void> {
+    this.onDebug?.('AzureTranscriptionService.init: SDK wird geladen.')
     this.sdk = await import('microsoft-cognitiveservices-speech-sdk')
 
     this.speechConfig = this.sdk.SpeechConfig.fromSubscription(this.azureConfig.speechKey, this.azureConfig.region)
@@ -50,6 +59,10 @@ export class AzureTranscriptionService {
     this.speechConfig.setProperty('SpeechServiceConnection_Endpoint', this.azureConfig.endpoint)
     this.speechConfig.setProperty('SpeechServiceResponse_DiarizeIntermediateResults', 'true')
     this.speechConfig.setProperty('SpeechServiceConnection_LanguageIdMode', 'Continuous')
+
+    this.onDebug?.(
+      `AzureTranscriptionService.init: Konfiguration aktiv (region=${this.azureConfig.region}, language=${this.settings.language}, diarizeInterim=true, lidMode=Continuous).`
+    )
 
     if (this.azureConfig.proxy) {
       this.speechConfig.setProxy(
@@ -92,6 +105,8 @@ export class AzureTranscriptionService {
         audioConfig
       )
 
+      this.attachCommonRecognizerDiagnostics(recognizer, frame.source, 'conversationTranscriber')
+
       recognizer.transcribing = (_sender: unknown, event: RecognitionEvent) => {
         const text = event.result?.text?.trim()
         if (!text || !event.result) return
@@ -102,6 +117,10 @@ export class AzureTranscriptionService {
         const text = event.result?.text?.trim()
         if (!text || !event.result) return
         this.onSegment(this.mapConversationResult(frame.source, event.result, 'final', 0.9))
+      }
+
+      recognizer.canceled = (_sender: unknown, event: CanceledEvent) => {
+        this.handleRecognizerCanceled(frame.source, 'conversationTranscriber', event)
       }
 
       recognizer.startTranscribingAsync(() => {
@@ -126,6 +145,8 @@ export class AzureTranscriptionService {
       audioConfig
     )
 
+    this.attachCommonRecognizerDiagnostics(recognizer, frame.source, 'speechRecognizer')
+
     recognizer.recognizing = (_sender: unknown, event: RecognitionEvent) => {
       this.logMissingSpeakerId(frame.source, event)
 
@@ -144,11 +165,8 @@ export class AzureTranscriptionService {
       this.onSegment(this.mapResult(frame.source, text, 'final', 0.9, language))
     }
 
-    recognizer.canceled = (_sender: unknown, event: { errorDetails?: string }) => {
-      this.onError({
-        code: event.errorDetails?.includes('authentication') ? 'AZURE_AUTH_FAILED' : 'AZURE_RECOGNIZER_FAILED',
-        message: event.errorDetails || 'Azure Recognizer wurde abgebrochen.'
-      })
+    recognizer.canceled = (_sender: unknown, event: CanceledEvent) => {
+      this.handleRecognizerCanceled(frame.source, 'speechRecognizer', event)
     }
 
     recognizer.startContinuousRecognitionAsync(() => {
@@ -171,36 +189,55 @@ export class AzureTranscriptionService {
   pushFrame(frame: DecodedFrame): void {
 
     try {
+      if (!this.firstFrameLogged.has(frame.source)) {
+        this.firstFrameLogged.add(frame.source)
+        this.onDebug?.(
+          `Erstes Audio-Frame empfangen (source=${frame.source}, sampleRate=${frame.sampleRate}, bits=${frame.bitsPerSample}, channels=${frame.channels}, bytes=${frame.payload.byteLength}).`
+        )
+      }
+
       const state = this.ensureStreamForFrame(frame)
       state.pushStream.write(frame.payload.buffer.slice(frame.payload.byteOffset, frame.payload.byteOffset + frame.payload.byteLength) as ArrayBuffer)
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error)
+      this.onDebug?.(`pushFrame Fehler (source=${frame.source}): ${message}`, 'error')
       this.onError({ code: 'AZURE_RECOGNIZER_FAILED', message })
     }
   }
 
   async stop(): Promise<void> {
+    this.onDebug?.(`AzureTranscriptionService.stop: ${this.streams.size} aktive Stream(s) werden beendet.`)
+
     const closePromises = [...this.streams.values()].map(
       (state) =>
         new Promise<void>((resolve) => {
           const finalize = () => {
+            this.onDebug?.(`Recognizer gestoppt (mode=${state.mode}).`)
             state.pushStream.close()
             state.recognizer.close()
             resolve()
           }
 
           if (state.mode === 'conversationTranscriber') {
-            state.recognizer.stopTranscribingAsync(finalize, finalize)
+            state.recognizer.stopTranscribingAsync(finalize, (error: string) => {
+              this.onDebug?.(`stopTranscribingAsync Fehler: ${String(error)}`, 'error')
+              finalize()
+            })
             return
           }
 
-          state.recognizer.stopContinuousRecognitionAsync(finalize, finalize)
+          state.recognizer.stopContinuousRecognitionAsync(finalize, (error: string) => {
+            this.onDebug?.(`stopContinuousRecognitionAsync Fehler: ${String(error)}`, 'error')
+            finalize()
+          })
         })
     )
 
     await Promise.all(closePromises)
     this.streams.clear()
     this.missingSpeakerIdLogged.clear()
+    this.firstFrameLogged.clear()
+    this.onDebug?.('AzureTranscriptionService.stop: alle Streams geschlossen.')
   }
 
   private mapConversationResult(
@@ -268,6 +305,56 @@ export class AzureTranscriptionService {
       state,
       confidence
     }
+  }
+
+  private attachCommonRecognizerDiagnostics(
+    recognizer: any,
+    source: TranscriptSource,
+    mode: StreamState['mode']
+  ): void {
+    recognizer.sessionStarted = (_sender: unknown, event: { sessionId?: string }) => {
+      this.onDebug?.(`Session gestartet (${this.formatRecognizerContext(source, mode, event.sessionId)}).`)
+    }
+
+    recognizer.sessionStopped = (_sender: unknown, event: { sessionId?: string }) => {
+      this.onDebug?.(`Session gestoppt (${this.formatRecognizerContext(source, mode, event.sessionId)}).`)
+    }
+
+    recognizer.speechStartDetected = (_sender: unknown, event: { sessionId?: string; offset?: number }) => {
+      this.onDebug?.(
+        `Speech start erkannt (${this.formatRecognizerContext(source, mode, event.sessionId)}, offset=${event.offset ?? 'n/a'}).`
+      )
+    }
+
+    recognizer.speechEndDetected = (_sender: unknown, event: { sessionId?: string; offset?: number }) => {
+      this.onDebug?.(
+        `Speech end erkannt (${this.formatRecognizerContext(source, mode, event.sessionId)}, offset=${event.offset ?? 'n/a'}).`
+      )
+    }
+  }
+
+  private handleRecognizerCanceled(
+    source: TranscriptSource,
+    mode: StreamState['mode'],
+    event: CanceledEvent
+  ): void {
+    const errorDetails = event.errorDetails?.trim() || 'Azure Recognizer wurde abgebrochen.'
+    const authRelated = /auth|token|key|forbidden|unauthorized|401|403/i.test(errorDetails)
+    const code: TranscriptError['code'] = authRelated ? 'AZURE_AUTH_FAILED' : 'AZURE_RECOGNIZER_FAILED'
+
+    this.onDebug?.(
+      `Recognizer canceled (${this.formatRecognizerContext(source, mode, event.sessionId)}, reason=${event.reason ?? 'n/a'}, errorCode=${event.errorCode ?? 'n/a'}): ${errorDetails}`,
+      'error'
+    )
+
+    this.onError({
+      code,
+      message: `[${source}/${mode}] ${errorDetails}`
+    })
+  }
+
+  private formatRecognizerContext(source: TranscriptSource, mode: StreamState['mode'], sessionId?: string): string {
+    return `source=${source}, mode=${mode}, session=${sessionId?.trim() || 'n/a'}`
   }
 
   private getLidCandidates(): string[] {
