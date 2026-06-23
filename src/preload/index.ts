@@ -7,7 +7,7 @@ import type {
   TranscriptSegment,
   TranscriptStatus
 } from '@shared/transcript-contract'
-import type { FixedAzureConfig, FixedAzureConfigState, UserSettings } from '@shared/config-contract'
+import type { AzureConfig, AzureConfigState, UserSettings } from '@shared/config-contract'
 
 const api: TranscriptApi = {
   start: () => ipcRenderer.invoke('transcript:start'),
@@ -16,9 +16,9 @@ const api: TranscriptApi = {
   getDebugLog: () => ipcRenderer.invoke('transcript:get-debug-log') as Promise<DebugLogEntry[]>,
   getDevices: () => ipcRenderer.invoke('transcript:get-devices') as Promise<AudioDeviceSnapshot>,
   getSettings: () => ipcRenderer.invoke('transcript:get-settings') as Promise<UserSettings>,
-  getFixedConfig: () => ipcRenderer.invoke('transcript:get-fixed-config') as Promise<FixedAzureConfigState>,
+  getConfig: () => ipcRenderer.invoke('transcript:get-config') as Promise<AzureConfigState>,
   saveSettings: (settings) => ipcRenderer.invoke('transcript:save-settings', settings) as Promise<UserSettings>,
-  saveFixedConfig: (config) => ipcRenderer.invoke('transcript:save-fixed-config', config) as Promise<FixedAzureConfigState>,
+  saveConfig: (config) => ipcRenderer.invoke('transcript:save-config', config) as Promise<AzureConfigState>,
   copyTranscript: (segments) => ipcRenderer.invoke('transcript:copy', segments),
   onSegment: (cb) => {
     const listener = (_event: Electron.IpcRendererEvent, payload: TranscriptSegment) => cb(payload)

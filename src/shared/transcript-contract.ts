@@ -128,9 +128,9 @@ export interface TranscriptApi {
   getDebugLog: () => Promise<DebugLogEntry[]>
   getDevices: () => Promise<AudioDeviceSnapshot>
   getSettings: () => Promise<import('./config-contract').UserSettings>
-  getFixedConfig: () => Promise<import('./config-contract').FixedAzureConfigState>
+  getConfig: () => Promise<import('./config-contract').AzureConfigState>
   saveSettings: (settings: import('./config-contract').UserSettings) => Promise<import('./config-contract').UserSettings>
-  saveFixedConfig: (config: import('./config-contract').FixedAzureConfig) => Promise<import('./config-contract').FixedAzureConfigState>
+  saveConfig: (config: import('./config-contract').AzureConfig) => Promise<import('./config-contract').AzureConfigState>
   copyTranscript: (segments: TranscriptSegment[]) => Promise<void>
   onSegment: (cb: (segment: TranscriptSegment) => void) => () => void
   onError: (cb: (error: TranscriptError) => void) => () => void

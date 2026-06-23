@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto'
-import type { FixedAzureConfig, UserSettings } from '@shared/config-contract'
+import type { AzureConfig, UserSettings } from '@shared/config-contract'
 import type { TranscriptError, TranscriptSegment, TranscriptSource } from '@shared/transcript-contract'
 import type { DecodedFrame } from './frame-protocol'
 
@@ -43,7 +43,7 @@ export class AzureTranscriptionService {
   private firstFrameLogged = new Set<TranscriptSource>()
 
   constructor(
-    private readonly azureConfig: FixedAzureConfig,
+    private readonly azureConfig: AzureConfig,
     private readonly settings: UserSettings,
     private readonly onSegment: (segment: TranscriptSegment) => void,
     private readonly onError: (error: TranscriptError) => void,

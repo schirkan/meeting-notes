@@ -5,7 +5,7 @@ export interface AzureProxyConfig {
   password?: string
 }
 
-export interface FixedAzureConfig {
+export interface AzureConfig {
   endpoint: string
   region: string
   speechKey: string
@@ -22,14 +22,14 @@ export interface UserSettings {
 }
 
 export interface ResolvedAppConfig {
-  azure: FixedAzureConfig
+  azure: AzureConfig
   user: UserSettings
 }
 
-export interface FixedAzureConfigState {
+export interface AzureConfigState {
   exists: boolean
   path: string
-  config: FixedAzureConfig | null
+  config: AzureConfig | null
 }
 
 export const DEFAULT_USER_SETTINGS: UserSettings = {
@@ -55,9 +55,9 @@ export function normalizeUserSettings(input: Partial<UserSettings> | null | unde
   }
 }
 
-export function validateFixedAzureConfig(input: unknown): input is FixedAzureConfig {
+export function validateAzureConfig(input: unknown): input is AzureConfig {
   if (!input || typeof input !== 'object') return false
-  const candidate = input as Partial<FixedAzureConfig>
+  const candidate = input as Partial<AzureConfig>
 
   const hasRequiredStrings =
     typeof candidate.endpoint === 'string' && candidate.endpoint.length > 0 &&

@@ -12,10 +12,10 @@ import { type DecodedFrame } from './frame-protocol'
 import { SidecarSession, listSidecarDevices } from './sidecar-manager'
 import { AzureTranscriptionService } from './azure-transcription-service'
 import {
-  getFixedAzureConfigState,
-  loadFixedAzureConfig,
+  getAzureConfigState,
+  loadAzureConfig,
   loadUserSettings,
-  saveFixedAzureConfig,
+  saveAzureConfig,
   saveUserSettings
 } from './settings-store'
 
@@ -212,12 +212,12 @@ async function startReal(): Promise<void> {
     throw new Error('Kein Speaker-Loopback-Device verfügbar.')
   }
 
-  const fixedAzure = await loadFixedAzureConfig()
-  if (!fixedAzure) {
-    throw new Error('Azure Fixed Config fehlt oder ist ungültig (config/azure.json).')
+  const azureConfig = await loadAzureConfig()
+  if (!azureConfig) {
+    throw new Error('Azure-Konfiguration fehlt oder ist ungültig (config/azure.json).')
   }
 
-  azureService = new AzureTranscriptionService(fixedAzure, userSettings, (segment) => {
+  azureService = new AzureTranscriptionService(azureConfig, userSettings, (segment) => {
     broadcast('transcript:segment', segment)
   }, emitError, (message, level) => appendDebugLog('main', message, level))
 
@@ -287,20 +287,20 @@ function registerIpc(): void {
     return userSettings
   })
 
-  ipcMain.handle('transcript:get-fixed-config', async () => {
-    appendDebugLog('ipc', 'transcript:get-fixed-config aufgerufen.')
-    return getFixedAzureConfigState()
+  ipcMain.handle('transcript:get-config', async () => {
+    appendDebugLog('ipc', 'transcript:get-config aufgerufen.')
+    return getAzureConfigState()
   })
 
-  ipcMain.handle('transcript:save-fixed-config', async (_event, payload) => {
-    appendDebugLog('ipc', 'transcript:save-fixed-config aufgerufen.')
+  ipcMain.handle('transcript:save-config', async (_event, payload) => {
+    appendDebugLog('ipc', 'transcript:save-config aufgerufen.')
 
     try {
-      const saved = await saveFixedAzureConfig(payload)
-      appendDebugLog('main', 'Azure Fixed Config gespeichert.')
+      const saved = await saveAzureConfig(payload)
+      appendDebugLog('main', 'Azure-Konfiguration gespeichert.')
       return {
         exists: true,
-        path: (await getFixedAzureConfigState()).path,
+        path: (await getAzureConfigState()).path,
         config: saved
       }
     } catch (error) {

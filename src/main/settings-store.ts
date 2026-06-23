@@ -2,15 +2,15 @@ import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import { dirname, join } from 'node:path'
 import {
   DEFAULT_USER_SETTINGS,
-  type FixedAzureConfigState,
+  type AzureConfigState,
   normalizeUserSettings,
-  type FixedAzureConfig,
+  type AzureConfig,
   type UserSettings,
-  validateFixedAzureConfig
+  validateAzureConfig
 } from '@shared/config-contract'
 
 const CONFIG_DIR = join(process.cwd(), 'config')
-const AZURE_FIXED_PATH = join(CONFIG_DIR, 'azure.json')
+const AZURE_CONFIG_PATH = join(CONFIG_DIR, 'azure.json')
 const USER_SETTINGS_PATH = join(CONFIG_DIR, 'user-settings.json')
 
 export async function loadUserSettings(): Promise<UserSettings> {
@@ -30,17 +30,17 @@ export async function saveUserSettings(settings: UserSettings): Promise<UserSett
   return normalized
 }
 
-export async function loadFixedAzureConfig(): Promise<FixedAzureConfig | null> {
+export async function loadAzureConfig(): Promise<AzureConfig | null> {
   try {
-    const raw = await readFile(AZURE_FIXED_PATH, 'utf8')
+    const raw = await readFile(AZURE_CONFIG_PATH, 'utf8')
     const parsed = JSON.parse(raw) as unknown
 
-    if (validateFixedAzureConfig(parsed)) {
+    if (validateAzureConfig(parsed)) {
       return parsed
     }
 
     const legacy = parsed as { azure?: unknown }
-    if (legacy && validateFixedAzureConfig(legacy.azure)) {
+    if (legacy && validateAzureConfig(legacy.azure)) {
       return legacy.azure
     }
 
@@ -50,7 +50,7 @@ export async function loadFixedAzureConfig(): Promise<FixedAzureConfig | null> {
   }
 }
 
-function normalizeFixedAzureConfig(config: FixedAzureConfig): FixedAzureConfig {
+function normalizeAzureConfig(config: AzureConfig): AzureConfig {
   const proxy = config.proxy
 
   return {
@@ -69,31 +69,31 @@ function normalizeFixedAzureConfig(config: FixedAzureConfig): FixedAzureConfig {
   }
 }
 
-export async function saveFixedAzureConfig(config: FixedAzureConfig): Promise<FixedAzureConfig> {
-  const normalized = normalizeFixedAzureConfig(config)
+export async function saveAzureConfig(config: AzureConfig): Promise<AzureConfig> {
+  const normalized = normalizeAzureConfig(config)
 
-  if (!validateFixedAzureConfig(normalized)) {
-    throw new Error('Azure Fixed Config ungültig. Bitte Endpoint, Region, Speech Key und Proxy-Felder prüfen.')
+  if (!validateAzureConfig(normalized)) {
+    throw new Error('Azure-Konfiguration ungültig. Bitte Endpoint, Region, Speech Key und Proxy-Felder prüfen.')
   }
 
-  await mkdir(dirname(AZURE_FIXED_PATH), { recursive: true })
-  await writeFile(AZURE_FIXED_PATH, `${JSON.stringify(normalized, null, 2)}\n`, 'utf8')
+  await mkdir(dirname(AZURE_CONFIG_PATH), { recursive: true })
+  await writeFile(AZURE_CONFIG_PATH, `${JSON.stringify(normalized, null, 2)}\n`, 'utf8')
   return normalized
 }
 
-export async function getFixedAzureConfigState(): Promise<FixedAzureConfigState> {
-  const config = await loadFixedAzureConfig()
+export async function getAzureConfigState(): Promise<AzureConfigState> {
+  const config = await loadAzureConfig()
 
   return {
     exists: config !== null,
-    path: AZURE_FIXED_PATH,
+    path: AZURE_CONFIG_PATH,
     config
   }
 }
 
 export function getConfigPaths(): { azure: string; user: string } {
   return {
-    azure: AZURE_FIXED_PATH,
+    azure: AZURE_CONFIG_PATH,
     user: USER_SETTINGS_PATH
   }
 }

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import type { FixedAzureConfig, FixedAzureConfigState, UserSettings } from '@shared/config-contract'
+import type { AzureConfig, AzureConfigState, UserSettings } from '@shared/config-contract'
 import {
   type AudioDeviceSnapshot,
   type DebugLogEntry,
@@ -39,7 +39,7 @@ const initialDevices: AudioDeviceSnapshot = {
   fetchedAtIso: new Date(0).toISOString()
 }
 
-type FixedConfigDraft = {
+type ConfigDraft = {
   endpoint: string
   region: string
   speechKey: string
@@ -51,7 +51,7 @@ type FixedConfigDraft = {
   proxyPassword: string
 }
 
-function toFixedConfigDraft(config: FixedAzureConfig | null): FixedConfigDraft {
+function toConfigDraft(config: AzureConfig | null): ConfigDraft {
   return {
     endpoint: config?.endpoint ?? '',
     region: config?.region ?? '',
@@ -65,7 +65,7 @@ function toFixedConfigDraft(config: FixedAzureConfig | null): FixedConfigDraft {
   }
 }
 
-function draftToFixedConfig(draft: FixedConfigDraft): FixedAzureConfig {
+function draftToConfig(draft: ConfigDraft): AzureConfig {
   const endpoint = draft.endpoint.trim()
   const region = draft.region.trim()
   const speechKey = draft.speechKey.trim()
@@ -117,13 +117,13 @@ export function App() {
   const [devices, setDevices] = useState<AudioDeviceSnapshot>(initialDevices)
   const [debugLog, setDebugLog] = useState<DebugLogEntry[]>([])
   const [settingsHint, setSettingsHint] = useState<string | null>(null)
-  const [fixedConfigHint, setFixedConfigHint] = useState<string | null>(null)
+  const [configHint, setConfigHint] = useState<string | null>(null)
   const [copyHint, setCopyHint] = useState<string | null>(null)
   const [settingsOpen, setSettingsOpen] = useState(false)
-  const [fixedConfigOpen, setFixedConfigOpen] = useState(false)
+  const [configOpen, setConfigOpen] = useState(false)
   const [debugOpen, setDebugOpen] = useState(false)
-  const [fixedConfigState, setFixedConfigState] = useState<FixedAzureConfigState | null>(null)
-  const [fixedConfigDraft, setFixedConfigDraft] = useState<FixedConfigDraft>(() => toFixedConfigDraft(null))
+  const [configState, setConfigState] = useState<AzureConfigState | null>(null)
+  const [configDraft, setConfigDraft] = useState<ConfigDraft>(() => toConfigDraft(null))
   const [speakerAliases, setSpeakerAliases] = useState<Record<string, string>>({})
   const [now, setNow] = useState(() => Date.now())
   const transcriptListRef = useRef<HTMLUListElement | null>(null)
@@ -141,18 +141,18 @@ export function App() {
       transcriptApi.getSettings(),
       transcriptApi.getDevices(),
       transcriptApi.getDebugLog(),
-      transcriptApi.getFixedConfig()
+      transcriptApi.getConfig()
     ])
-      .then(([nextStatus, nextSettings, nextDevices, nextDebugLog, nextFixedConfig]) => {
+      .then(([nextStatus, nextSettings, nextDevices, nextDebugLog, nextConfig]) => {
         setStatus(nextStatus)
         setSettings(nextSettings)
         setDevices(nextDevices)
         setDebugLog(nextDebugLog)
-        setFixedConfigState(nextFixedConfig)
-        setFixedConfigDraft(toFixedConfigDraft(nextFixedConfig.config))
+        setConfigState(nextConfig)
+        setConfigDraft(toConfigDraft(nextConfig.config))
 
-        if (!nextFixedConfig.exists) {
-          setFixedConfigOpen(true)
+        if (!nextConfig.exists) {
+          setConfigOpen(true)
         }
       })
       .catch((error) => {
@@ -297,16 +297,16 @@ export function App() {
     }
   }
 
-  const onSaveFixedConfig = async () => {
+  const onSaveConfig = async () => {
     try {
-      const payload = draftToFixedConfig(fixedConfigDraft)
-      const savedState = await window.transcriptApi.saveFixedConfig(payload)
-      setFixedConfigState(savedState)
-      setFixedConfigDraft(toFixedConfigDraft(savedState.config))
-      setFixedConfigHint('Azure-Konfiguration gespeichert.')
+      const payload = draftToConfig(configDraft)
+      const savedState = await window.transcriptApi.saveConfig(payload)
+      setConfigState(savedState)
+      setConfigDraft(toConfigDraft(savedState.config))
+      setConfigHint('Azure-Konfiguration gespeichert.')
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Azure-Konfiguration konnte nicht gespeichert werden.'
-      setFixedConfigHint(message)
+      setConfigHint(message)
     }
   }
 
@@ -412,7 +412,7 @@ export function App() {
         </section>
       )}
 
-      {fixedConfigState?.exists === false && (
+      {configState?.exists === false && (
         <section className="hint">
           Azure-Konfiguration fehlt. Bitte <code>config/azure.json</code> im Formular unten speichern.
         </section>
@@ -562,7 +562,7 @@ export function App() {
                 <button
                   className="ghost-button settings-save-button"
                   type="button"
-                  onClick={() => setFixedConfigOpen(true)}
+                  onClick={() => setConfigOpen(true)}
                 >
                   Azure-Konfiguration öffnen
                 </button>
@@ -575,16 +575,16 @@ export function App() {
             <button
               className="panel-toggle"
               type="button"
-              onClick={() => setFixedConfigOpen((prev) => !prev)}
-              aria-expanded={fixedConfigOpen || fixedConfigState?.exists === false}
+              onClick={() => setConfigOpen((prev) => !prev)}
+              aria-expanded={configOpen || configState?.exists === false}
             >
               <h2>Azure-Konfiguration</h2>
-              <span className="toggle-indicator">{fixedConfigOpen || fixedConfigState?.exists === false ? '−' : '+'}</span>
+              <span className="toggle-indicator">{configOpen || configState?.exists === false ? '−' : '+'}</span>
             </button>
 
-            {(fixedConfigOpen || fixedConfigState?.exists === false) && (
+            {(configOpen || configState?.exists === false) && (
               <>
-                {!fixedConfigState?.exists && (
+                {!configState?.exists && (
                   <div className="settings-inline-hint">
                     Keine gültige <code>config/azure.json</code> gefunden. Bitte jetzt anlegen.
                   </div>
@@ -595,8 +595,8 @@ export function App() {
                     Endpoint
                     <input
                       type="text"
-                      value={fixedConfigDraft.endpoint}
-                      onChange={(event) => setFixedConfigDraft((prev) => ({ ...prev, endpoint: event.target.value }))}
+                      value={configDraft.endpoint}
+                      onChange={(event) => setConfigDraft((prev) => ({ ...prev, endpoint: event.target.value }))}
                       placeholder="https://..."
                       disabled={status.running}
                     />
@@ -606,8 +606,8 @@ export function App() {
                     Region
                     <input
                       type="text"
-                      value={fixedConfigDraft.region}
-                      onChange={(event) => setFixedConfigDraft((prev) => ({ ...prev, region: event.target.value }))}
+                      value={configDraft.region}
+                      onChange={(event) => setConfigDraft((prev) => ({ ...prev, region: event.target.value }))}
                       placeholder="westeurope"
                       disabled={status.running}
                     />
@@ -617,8 +617,8 @@ export function App() {
                     Speech Key
                     <input
                       type="password"
-                      value={fixedConfigDraft.speechKey}
-                      onChange={(event) => setFixedConfigDraft((prev) => ({ ...prev, speechKey: event.target.value }))}
+                      value={configDraft.speechKey}
+                      onChange={(event) => setConfigDraft((prev) => ({ ...prev, speechKey: event.target.value }))}
                       placeholder="Azure Speech Key"
                       disabled={status.running}
                     />
@@ -627,8 +627,8 @@ export function App() {
                   <label className="checkbox-field">
                     <input
                       type="checkbox"
-                      checked={fixedConfigDraft.interimResults}
-                      onChange={(event) => setFixedConfigDraft((prev) => ({ ...prev, interimResults: event.target.checked }))}
+                      checked={configDraft.interimResults}
+                      onChange={(event) => setConfigDraft((prev) => ({ ...prev, interimResults: event.target.checked }))}
                       disabled={status.running}
                     />
                     <span>Interim Results aktivieren</span>
@@ -637,21 +637,21 @@ export function App() {
                   <label className="checkbox-field">
                     <input
                       type="checkbox"
-                      checked={fixedConfigDraft.useProxy}
-                      onChange={(event) => setFixedConfigDraft((prev) => ({ ...prev, useProxy: event.target.checked }))}
+                      checked={configDraft.useProxy}
+                      onChange={(event) => setConfigDraft((prev) => ({ ...prev, useProxy: event.target.checked }))}
                       disabled={status.running}
                     />
                     <span>Proxy verwenden</span>
                   </label>
 
-                  {fixedConfigDraft.useProxy && (
+                  {configDraft.useProxy && (
                     <div className="row">
                       <label>
                         Proxy Host
                         <input
                           type="text"
-                          value={fixedConfigDraft.proxyHost}
-                          onChange={(event) => setFixedConfigDraft((prev) => ({ ...prev, proxyHost: event.target.value }))}
+                          value={configDraft.proxyHost}
+                          onChange={(event) => setConfigDraft((prev) => ({ ...prev, proxyHost: event.target.value }))}
                           disabled={status.running}
                         />
                       </label>
@@ -661,8 +661,8 @@ export function App() {
                         <input
                           type="number"
                           min={1}
-                          value={fixedConfigDraft.proxyPort}
-                          onChange={(event) => setFixedConfigDraft((prev) => ({ ...prev, proxyPort: event.target.value }))}
+                          value={configDraft.proxyPort}
+                          onChange={(event) => setConfigDraft((prev) => ({ ...prev, proxyPort: event.target.value }))}
                           disabled={status.running}
                         />
                       </label>
@@ -671,8 +671,8 @@ export function App() {
                         Proxy Benutzername (optional)
                         <input
                           type="text"
-                          value={fixedConfigDraft.proxyUsername}
-                          onChange={(event) => setFixedConfigDraft((prev) => ({ ...prev, proxyUsername: event.target.value }))}
+                          value={configDraft.proxyUsername}
+                          onChange={(event) => setConfigDraft((prev) => ({ ...prev, proxyUsername: event.target.value }))}
                           disabled={status.running}
                         />
                       </label>
@@ -681,8 +681,8 @@ export function App() {
                         Proxy Passwort (optional)
                         <input
                           type="password"
-                          value={fixedConfigDraft.proxyPassword}
-                          onChange={(event) => setFixedConfigDraft((prev) => ({ ...prev, proxyPassword: event.target.value }))}
+                          value={configDraft.proxyPassword}
+                          onChange={(event) => setConfigDraft((prev) => ({ ...prev, proxyPassword: event.target.value }))}
                           disabled={status.running}
                         />
                       </label>
@@ -690,12 +690,12 @@ export function App() {
                   )}
                 </div>
 
-                <button className="primary-button settings-save-button" type="button" onClick={onSaveFixedConfig} disabled={status.running}>
+                <button className="primary-button settings-save-button" type="button" onClick={onSaveConfig} disabled={status.running}>
                   Azure-Konfiguration speichern
                 </button>
 
-                {fixedConfigState?.path && <p className="meta-path">Pfad: {fixedConfigState.path}</p>}
-                {fixedConfigHint && <div className="hint">{fixedConfigHint}</div>}
+                {configState?.path && <p className="meta-path">Pfad: {configState.path}</p>}
+                {configHint && <div className="hint">{configHint}</div>}
               </>
             )}
           </section>
