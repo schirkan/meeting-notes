@@ -103,7 +103,15 @@ function createWindow(): void {
   mainWindow.setMenuBarVisibility(false)
 
   mainWindow.webContents.on('before-input-event', (event, input) => {
-    if (input.type !== 'keyDown' || input.key !== 'F12') return
+    if (input.type !== 'keyDown') return
+
+    if (input.key === 'F5') {
+      event.preventDefault()
+      void mainWindow?.webContents.reload()
+      return
+    }
+
+    if (input.key !== 'F12') return
 
     event.preventDefault()
 

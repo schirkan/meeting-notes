@@ -7,22 +7,23 @@ import {
   type TranscriptSegment,
   type TranscriptStatus
 } from '@shared/transcript-contract'
-
-const languageOptions = [
-  { value: 'de-DE', label: 'Deutsch' },
-  { value: 'en-US', label: 'Englisch' },
-  { value: 'fr-FR', label: 'Französisch' },
-  { value: 'es-ES', label: 'Spanisch' },
-  { value: 'it-IT', label: 'Italienisch' },
-  { value: 'pt-BR', label: 'Portugiesisch' },
-  { value: 'nl-NL', label: 'Niederländisch' },
-  { value: 'pl-PL', label: 'Polnisch' },
-  { value: 'tr-TR', label: 'Türkisch' },
-  { value: 'ja-JP', label: 'Japanisch' }
-] as const
+import { ConfigPanel } from './components/ConfigPanel'
+import { type ConfigDraft, draftToConfig, isConfigComplete, toConfigDraft } from './config-utils'
+import { DebugLogPanel } from './components/DebugLogPanel'
+import { HeroStatusCard } from './components/HeroStatusCard'
+import { SettingsDialog } from './components/SettingsDialog'
+import { SettingsPanel } from './components/SettingsPanel'
+import { SpeakerMappingPanel } from './components/SpeakerMappingPanel'
+import { TranscriptPanel } from './components/TranscriptPanel'
 
 const initialStatus: TranscriptStatus = {
   running: false
+}
+
+type ToastState = {
+  message: string
+  variant: 'info' | 'error'
+  persistent: boolean
 }
 
 const initialSettings: UserSettings = {
@@ -39,75 +40,6 @@ const initialDevices: AudioDeviceSnapshot = {
   fetchedAtIso: new Date(0).toISOString()
 }
 
-type ConfigDraft = {
-  endpoint: string
-  region: string
-  speechKey: string
-  interimResults: boolean
-  useProxy: boolean
-  proxyHost: string
-  proxyPort: string
-  proxyUsername: string
-  proxyPassword: string
-}
-
-function toConfigDraft(config: AzureConfig | null): ConfigDraft {
-  return {
-    endpoint: config?.endpoint ?? '',
-    region: config?.region ?? '',
-    speechKey: config?.speechKey ?? '',
-    interimResults: config?.interimResults ?? true,
-    useProxy: !!config?.proxy,
-    proxyHost: config?.proxy?.host ?? '',
-    proxyPort: config?.proxy?.port != null ? String(config.proxy.port) : '',
-    proxyUsername: config?.proxy?.username ?? '',
-    proxyPassword: config?.proxy?.password ?? ''
-  }
-}
-
-function draftToConfig(draft: ConfigDraft): AzureConfig {
-  const endpoint = draft.endpoint.trim()
-  const region = draft.region.trim()
-  const speechKey = draft.speechKey.trim()
-
-  if (!endpoint || !region || !speechKey) {
-    throw new Error('Bitte Endpoint, Region und Speech Key ausfüllen.')
-  }
-
-  const proxyPort = draft.proxyPort.trim()
-
-  if (!draft.useProxy) {
-    return {
-      endpoint,
-      region,
-      speechKey,
-      interimResults: draft.interimResults
-    }
-  }
-
-  if (!draft.proxyHost.trim() || !proxyPort) {
-    throw new Error('Proxy ist aktiv. Bitte Host und Port ausfüllen.')
-  }
-
-  const parsedPort = Number(proxyPort)
-  if (!Number.isFinite(parsedPort) || parsedPort <= 0) {
-    throw new Error('Proxy-Port ist ungültig.')
-  }
-
-  return {
-    endpoint,
-    region,
-    speechKey,
-    interimResults: draft.interimResults,
-    proxy: {
-      host: draft.proxyHost.trim(),
-      port: parsedPort,
-      username: draft.proxyUsername.trim() || undefined,
-      password: draft.proxyPassword.trim() || undefined
-    }
-  }
-}
-
 export function App() {
   const [status, setStatus] = useState<TranscriptStatus>(initialStatus)
   const [segments, setSegments] = useState<TranscriptSegment[]>([])
@@ -117,11 +49,12 @@ export function App() {
   const [devices, setDevices] = useState<AudioDeviceSnapshot>(initialDevices)
   const [debugLog, setDebugLog] = useState<DebugLogEntry[]>([])
   const [settingsHint, setSettingsHint] = useState<string | null>(null)
-  const [configHint, setConfigHint] = useState<string | null>(null)
-  const [copyHint, setCopyHint] = useState<string | null>(null)
+  const [toast, setToast] = useState<ToastState | null>(null)
   const [settingsOpen, setSettingsOpen] = useState(false)
+  const [settingsDialogOpen, setSettingsDialogOpen] = useState(false)
   const [configOpen, setConfigOpen] = useState(false)
   const [debugOpen, setDebugOpen] = useState(false)
+  const [isStarting, setIsStarting] = useState(false)
   const [configState, setConfigState] = useState<AzureConfigState | null>(null)
   const [configDraft, setConfigDraft] = useState<ConfigDraft>(() => toConfigDraft(null))
   const [speakerAliases, setSpeakerAliases] = useState<Record<string, string>>({})
@@ -133,6 +66,11 @@ export function App() {
 
     if (!transcriptApi) {
       setRuntimeIssue('IPC-Bridge nicht verfügbar. Prüfe Preload/Dev-Start.')
+      setToast({
+        message: 'IPC-Bridge nicht verfügbar. Prüfe Preload/Dev-Start.',
+        variant: 'error',
+        persistent: true
+      })
       return
     }
 
@@ -158,6 +96,7 @@ export function App() {
       .catch((error) => {
         const message = error instanceof Error ? error.message : 'Initialdaten konnten nicht geladen werden.'
         setRuntimeIssue(message)
+        setToast({ message, variant: 'error', persistent: true })
       })
 
     const unsubSegment = transcriptApi.onSegment((segment) => {
@@ -210,6 +149,11 @@ export function App() {
 
     const unsubError = transcriptApi.onError((error) => {
       setLastError(error)
+      setToast({
+        message: `${error.code}: ${error.message}`,
+        variant: 'error',
+        persistent: true
+      })
     })
 
     const unsubStatus = transcriptApi.onStatus((nextStatus) => {
@@ -246,24 +190,60 @@ export function App() {
   }, [status.running, status.startedAt])
 
   useEffect(() => {
-    if (!copyHint) return
+    if (!toast || toast.persistent) return
 
     const timer = window.setTimeout(() => {
-      setCopyHint(null)
+      setToast(null)
     }, 5000)
 
     return () => {
       window.clearTimeout(timer)
     }
-  }, [copyHint])
+  }, [toast])
+
+  useEffect(() => {
+    const handleBeforeUnload = (event: BeforeUnloadEvent) => {
+      if (!status.running) {
+        return undefined
+      }
+
+      event.preventDefault()
+      event.returnValue = ''
+      return ''
+    }
+
+    window.addEventListener('beforeunload', handleBeforeUnload)
+
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload)
+    }
+  }, [status.running])
 
   const statusLabel = useMemo(() => {
+    if (isStarting) return 'Startet'
     if (status.running) return 'Läuft'
+    if (configState && !isConfigComplete(configState.config)) return 'Konfiguration unvollständig'
     if (lastError) return 'Fehler'
     return 'Gestoppt'
-  }, [lastError, status.running])
+  }, [configState, isStarting, lastError, status.running])
+
+  const isConfigReady = useMemo(() => {
+    if (!configState?.exists || !configState.config) {
+      return false
+    }
+
+    return isConfigComplete(configState.config)
+  }, [configState])
+
+  const statusDescription = useMemo(() => {
+    if (isStarting) return 'Transkription wird gestartet ...'
+    if (status.running) return 'Transkription aktiv'
+    if (!isConfigReady) return 'Konfiguration unvollständig'
+    return 'Bereit zum Starten'
+  }, [isConfigReady, isStarting, status.running])
 
   const onStart = async () => {
+    setIsStarting(true)
     try {
       setLastError(null)
       const next = await window.transcriptApi.start()
@@ -271,6 +251,8 @@ export function App() {
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Start fehlgeschlagen.'
       setLastError({ code: 'UI_START_FAILED', message })
+    } finally {
+      setIsStarting(false)
     }
   }
 
@@ -290,10 +272,12 @@ export function App() {
       setSettings(saved)
       const refreshedDevices = await window.transcriptApi.getDevices()
       setDevices(refreshedDevices)
-      setSettingsHint('Einstellungen gespeichert.')
+      setSettingsHint(null)
+      setToast({ message: 'Einstellungen gespeichert.', variant: 'info', persistent: false })
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Einstellungen konnten nicht gespeichert werden.'
       setSettingsHint(message)
+      setToast({ message, variant: 'error', persistent: true })
     }
   }
 
@@ -303,20 +287,20 @@ export function App() {
       const savedState = await window.transcriptApi.saveConfig(payload)
       setConfigState(savedState)
       setConfigDraft(toConfigDraft(savedState.config))
-      setConfigHint('Azure-Konfiguration gespeichert.')
+      setToast({ message: 'Azure-Konfiguration gespeichert.', variant: 'info', persistent: false })
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Azure-Konfiguration konnte nicht gespeichert werden.'
-      setConfigHint(message)
+      setToast({ message, variant: 'error', persistent: true })
     }
   }
 
   const onCopyTranscript = async () => {
     try {
       await window.transcriptApi.copyTranscript(segments)
-      setCopyHint('Finales Transkript wurde in die Zwischenablage kopiert.')
+      setToast({ message: 'Finales Transkript wurde in die Zwischenablage kopiert.', variant: 'info', persistent: false })
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Kopieren fehlgeschlagen.'
-      setCopyHint(message)
+      setToast({ message, variant: 'error', persistent: true })
     }
   }
 
@@ -400,18 +384,6 @@ export function App() {
 
   return (
     <main className="container">
-      {runtimeIssue && (
-        <section className="error">
-          <strong>RUNTIME_BRIDGE_MISSING</strong>: {runtimeIssue}
-        </section>
-      )}
-
-      {lastError && (
-        <section className="error">
-          <strong>{lastError.code}</strong>: {lastError.message}
-        </section>
-      )}
-
       {configState?.exists === false && (
         <section className="hint">
           Azure-Konfiguration fehlt. Bitte <code>config/azure.json</code> im Formular unten speichern.
@@ -419,363 +391,78 @@ export function App() {
       )}
 
       <div className="layout-grid">
-        <section className="panel transcript-panel">
-          <div className="panel-header">
-            <h2>Transkript</h2>
-          </div>
-          {segments.length === 0 ? (
-            <p className="empty">Noch keine Daten. Starte den Service.</p>
-          ) : (
-            <ul ref={transcriptListRef} className="transcript-list">
-              {segments.map((segment) => (
-                <li key={segment.id} className={`segment ${segment.state}`}>
-                  <span className="segment-text">{segment.text}</span>
-                  <div className="segment-meta-column">
-                    <span className="meta">{new Date(segment.timestampIso).toLocaleTimeString('de-DE')}</span>
-                    {segment.language && <span className="meta">{segment.language}</span>}
-                    <span className={`speaker-badge ${getSpeakerClass(segment.speaker)}`.trim()}>{getSpeakerLabel(segment.speaker)}</span>
-                  </div>
-                </li>
-              ))}
-            </ul>
-          )}
-        </section>
+        <TranscriptPanel
+          segments={segments}
+          transcriptListRef={transcriptListRef}
+          getSpeakerClass={getSpeakerClass}
+          getSpeakerLabel={getSpeakerLabel}
+        />
 
-        <aside className="sidebar-stack">
-          <section className="hero-status-card">
-            <strong>{statusLabel}</strong>
-            <span>{status.running ? 'Transkription aktiv' : 'Bereit zum Starten'}</span>
-            <div className="controls hero-controls">
-              <button
-                className={status.running ? 'secondary-button' : 'primary-button'}
-                type="button"
-                onClick={onToggleRecording}
-                disabled={!!runtimeIssue}
-              >
-                {status.running ? 'Stop' : 'Start'}
-              </button>
-              <button className="ghost-button" type="button" onClick={onCopyTranscript} disabled={finalCount === 0}>
-                TXT kopieren
-              </button>
-            </div>
-            <div className="hero-stats">
-              <div>
-                <span>Einträge</span>
-                <strong>{finalCount}</strong>
-              </div>
-              <div>
-                <span>Letzter Sprecher</span>
-                <strong>{latestSegment ? getSpeakerLabel(latestSegment.speaker) : '---'}</strong>
-              </div>
-              <div>
-                <span>Dauer</span>
-                <strong>{durationLabel}</strong>
-              </div>
-              <div>
-                <span>Startzeit</span>
-                <strong>{startedAtLabel}</strong>
-              </div>
-            </div>
-          </section>
+        <div className="sidebar-stack">
+          <HeroStatusCard
+            status={status}
+            statusLabel={statusLabel}
+            statusDescription={statusDescription}
+            runtimeIssue={runtimeIssue}
+            isStarting={isStarting}
+            startDisabled={!isConfigReady}
+            finalCount={finalCount}
+            latestSegment={latestSegment}
+            durationLabel={durationLabel}
+            startedAtLabel={startedAtLabel}
+            getSpeakerLabel={getSpeakerLabel}
+            onOpenSettingsDialog={() => setSettingsDialogOpen(true)}
+            onToggleRecording={onToggleRecording}
+            onCopyTranscript={onCopyTranscript}
+          />
+        </div>
 
-          <section className="panel settings">
-            <button
-              className="panel-toggle"
-              type="button"
-              onClick={() => setSettingsOpen((prev) => !prev)}
-              aria-expanded={settingsOpen}
-            >
-              <h2>Einstellungen</h2>
-              <span className="toggle-indicator">{settingsOpen ? '−' : '+'}</span>
-            </button>
-
-            {settingsOpen && (
-              <>
-                {status.running && <div className="settings-inline-hint">Stop first to change settings.</div>}
-
-                <div className="settings-block">
-                  <span className="field-label">Sprache</span>
-                  <div className="language-grid" role="radiogroup" aria-label="Sprache auswählen">
-                    {languageOptions.map((option) => (
-                      <label key={option.value} className={`language-option ${settings.language === option.value ? 'active' : ''}`}>
-                        <input
-                          type="radio"
-                          name="language"
-                          value={option.value}
-                          checked={settings.language === option.value}
-                          onChange={(event) => setSettings((prev) => ({ ...prev, language: event.target.value }))}
-                          disabled={status.running}
-                        />
-                        <span>{option.label}</span>
-                      </label>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="row">
-                  <label>
-                    Mikrofon
-                    <select
-                      value={settings.devices.micId ?? ''}
-                      onChange={(event) =>
-                        setSettings((prev) => ({
-                          ...prev,
-                          devices: { ...prev.devices, micId: event.target.value || null }
-                        }))
-                      }
-                      disabled={status.running}
-                    >
-                      <option value="">System-Default</option>
-                      {devices.inputs.map((device) => (
-                        <option key={device.id} value={device.id}>
-                          {device.name} {device.isDefault ? '(Default)' : ''}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-
-                  <label>
-                    Speaker Loopback
-                    <select
-                      value={settings.devices.speakerLoopbackId ?? ''}
-                      onChange={(event) =>
-                        setSettings((prev) => ({
-                          ...prev,
-                          devices: { ...prev.devices, speakerLoopbackId: event.target.value || null }
-                        }))
-                      }
-                      disabled={status.running}
-                    >
-                      <option value="">System-Default</option>
-                      {devices.outputs.map((device) => (
-                        <option key={device.id} value={device.id}>
-                          {device.name} {device.isDefault ? '(Default)' : ''}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-                </div>
-
-                <button className="primary-button settings-save-button" type="button" onClick={onSaveSettings} disabled={status.running}>
-                  Einstellungen speichern
-                </button>
-                <button
-                  className="ghost-button settings-save-button"
-                  type="button"
-                  onClick={() => setConfigOpen(true)}
-                >
-                  Azure-Konfiguration öffnen
-                </button>
-                {settingsHint && <div className="hint">{settingsHint}</div>}
-              </>
-            )}
-          </section>
-
-          <section className="panel settings">
-            <button
-              className="panel-toggle"
-              type="button"
-              onClick={() => setConfigOpen((prev) => !prev)}
-              aria-expanded={configOpen || configState?.exists === false}
-            >
-              <h2>Azure-Konfiguration</h2>
-              <span className="toggle-indicator">{configOpen || configState?.exists === false ? '−' : '+'}</span>
-            </button>
-
-            {(configOpen || configState?.exists === false) && (
-              <>
-                {!configState?.exists && (
-                  <div className="settings-inline-hint">
-                    Keine gültige <code>config/azure.json</code> gefunden. Bitte jetzt anlegen.
-                  </div>
-                )}
-
-                <div className="settings-block">
-                  <label>
-                    Endpoint
-                    <input
-                      type="text"
-                      value={configDraft.endpoint}
-                      onChange={(event) => setConfigDraft((prev) => ({ ...prev, endpoint: event.target.value }))}
-                      placeholder="https://..."
-                      disabled={status.running}
-                    />
-                  </label>
-
-                  <label>
-                    Region
-                    <input
-                      type="text"
-                      value={configDraft.region}
-                      onChange={(event) => setConfigDraft((prev) => ({ ...prev, region: event.target.value }))}
-                      placeholder="westeurope"
-                      disabled={status.running}
-                    />
-                  </label>
-
-                  <label>
-                    Speech Key
-                    <input
-                      type="password"
-                      value={configDraft.speechKey}
-                      onChange={(event) => setConfigDraft((prev) => ({ ...prev, speechKey: event.target.value }))}
-                      placeholder="Azure Speech Key"
-                      disabled={status.running}
-                    />
-                  </label>
-
-                  <label className="checkbox-field">
-                    <input
-                      type="checkbox"
-                      checked={configDraft.interimResults}
-                      onChange={(event) => setConfigDraft((prev) => ({ ...prev, interimResults: event.target.checked }))}
-                      disabled={status.running}
-                    />
-                    <span>Interim Results aktivieren</span>
-                  </label>
-
-                  <label className="checkbox-field">
-                    <input
-                      type="checkbox"
-                      checked={configDraft.useProxy}
-                      onChange={(event) => setConfigDraft((prev) => ({ ...prev, useProxy: event.target.checked }))}
-                      disabled={status.running}
-                    />
-                    <span>Proxy verwenden</span>
-                  </label>
-
-                  {configDraft.useProxy && (
-                    <div className="row">
-                      <label>
-                        Proxy Host
-                        <input
-                          type="text"
-                          value={configDraft.proxyHost}
-                          onChange={(event) => setConfigDraft((prev) => ({ ...prev, proxyHost: event.target.value }))}
-                          disabled={status.running}
-                        />
-                      </label>
-
-                      <label>
-                        Proxy Port
-                        <input
-                          type="number"
-                          min={1}
-                          value={configDraft.proxyPort}
-                          onChange={(event) => setConfigDraft((prev) => ({ ...prev, proxyPort: event.target.value }))}
-                          disabled={status.running}
-                        />
-                      </label>
-
-                      <label>
-                        Proxy Benutzername (optional)
-                        <input
-                          type="text"
-                          value={configDraft.proxyUsername}
-                          onChange={(event) => setConfigDraft((prev) => ({ ...prev, proxyUsername: event.target.value }))}
-                          disabled={status.running}
-                        />
-                      </label>
-
-                      <label>
-                        Proxy Passwort (optional)
-                        <input
-                          type="password"
-                          value={configDraft.proxyPassword}
-                          onChange={(event) => setConfigDraft((prev) => ({ ...prev, proxyPassword: event.target.value }))}
-                          disabled={status.running}
-                        />
-                      </label>
-                    </div>
-                  )}
-                </div>
-
-                <button className="primary-button settings-save-button" type="button" onClick={onSaveConfig} disabled={status.running}>
-                  Azure-Konfiguration speichern
-                </button>
-
-                {configState?.path && <p className="meta-path">Pfad: {configState.path}</p>}
-                {configHint && <div className="hint">{configHint}</div>}
-              </>
-            )}
-          </section>
-
-          <section className="panel debug-log-panel">
-            <button
-              className="panel-toggle"
-              type="button"
-              onClick={() => setDebugOpen((prev) => !prev)}
-              aria-expanded={debugOpen}
-            >
-              <h2>Debug-Log</h2>
-              <span className="toggle-indicator">{debugOpen ? '−' : '+'}</span>
-            </button>
-
-            {debugOpen && (
-              <>
-                {debugLog.length === 0 ? (
-                  <p className="empty">Noch keine Debug-Einträge.</p>
-                ) : (
-                  <ul className="debug-log-list">
-                    {debugLog.map((entry) => (
-                      <li key={entry.id} className={`debug-log-entry ${entry.level}`}>
-                        <span className="meta">
-                          [{new Date(entry.timestampIso).toLocaleString('de-DE')}] {entry.source.toUpperCase()} · {entry.level}
-                        </span>
-                        <span>{entry.message}</span>
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </>
-            )}
-          </section>
-
-          <section className="panel speaker-mapping-panel">
-            <div className="panel-header">
-              <h2>Sprecherzuordnung</h2>
-              <span className="subtle-pill">{knownSpeakers.length} IDs</span>
-            </div>
-
-            {knownSpeakers.length === 0 ? (
-              <p className="empty">Sobald Sprecher erkannt wurden, kannst du ihnen hier Anzeigenamen zuweisen.</p>
-            ) : (
-              <div className="speaker-mapping-table-wrap">
-                <table className="speaker-mapping-table">
-                  <thead>
-                    <tr>
-                      <th scope="col">Speaker-ID</th>
-                      <th scope="col">Anzeigename</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {knownSpeakers.map((speaker) => (
-                      <tr key={speaker}>
-                        <td className="speaker-mapping-id">{speaker}</td>
-                        <td>
-                          <input
-                            type="text"
-                            value={speakerAliases[speaker] ?? ''}
-                            onChange={(event) =>
-                              setSpeakerAliases((prev) => ({
-                                ...prev,
-                                [speaker]: event.target.value
-                              }))
-                            }
-                            placeholder="Anzeigename"
-                          />
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </section>
-        </aside>
+        <SpeakerMappingPanel
+          knownSpeakers={knownSpeakers}
+          speakerAliases={speakerAliases}
+          setSpeakerAliases={setSpeakerAliases}
+        />
       </div>
 
-      {copyHint && <div className="toast toast-visible">{copyHint}</div>}
+      <DebugLogPanel
+        debugOpen={debugOpen}
+        debugLog={debugLog}
+        setDebugOpen={setDebugOpen}
+      />
+
+      <SettingsDialog isOpen={settingsDialogOpen} onClose={() => setSettingsDialogOpen(false)}>
+        <SettingsPanel
+          statusRunning={status.running}
+          settings={settings}
+          devices={devices}
+          settingsError={settingsHint}
+          setSettings={setSettings}
+          onSaveSettings={onSaveSettings}
+        />
+
+        <ConfigPanel
+          configState={configState}
+          configDraft={configDraft}
+          statusRunning={status.running}
+          setConfigDraft={setConfigDraft}
+          onSaveConfig={onSaveConfig}
+        />
+      </SettingsDialog>
+
+      {toast && (
+        toast.persistent ? (
+          <div className={`toast toast-visible toast-${toast.variant} toast-persistent`.trim()} role="alert">
+            <div className="toast-copyable-text">{toast.message}</div>
+            <button className="toast-close-button" type="button" onClick={() => setToast(null)} aria-label="Fehlermeldung schließen">
+              Schließen
+            </button>
+          </div>
+        ) : (
+          <div className={`toast toast-visible toast-${toast.variant}`.trim()} role="status">
+            {toast.message}
+          </div>
+        )
+      )}
     </main>
   )
 }
