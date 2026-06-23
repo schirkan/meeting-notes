@@ -293,11 +293,11 @@ button:disabled {
   padding: 24px;
   background: rgba(28, 25, 23, 0.34);
   backdrop-filter: blur(10px);
+  overflow: auto;
 }
 
 .settings-dialog {
   width: min(720px, calc(100vw - 48px));
-  min-height: 220px;
   padding: 24px;
   border: 1px solid rgba(120, 113, 108, 0.2);
   border-radius: 28px;
@@ -988,10 +988,6 @@ ul {
 }
 
 @media (max-width: 640px) {
-  .container {
-    padding: 20px 14px 28px;
-  }
-
   .settings-dialog {
     width: min(100%, calc(100vw - 28px));
     padding: 18px;
@@ -1022,11 +1018,6 @@ ul {
     align-items: flex-start;
     min-width: 0;
   }
-  /* 
-  .language-grid,
-  .hero-stats {
-    grid-template-columns: 1fr;
-  } */
 }
 
 .speaker-mapping-table-wrap {
