@@ -16,7 +16,7 @@
     "measure:latency": "node scripts/measure-latency.mjs",
     "build:sidecar": "dotnet build sidecar/MeetingNotes.Sidecar.csproj -c Release",
     "publish:sidecar": "dotnet publish sidecar/MeetingNotes.Sidecar.csproj -c Release -r win-x64 --self-contained false -o sidecar/publish/sidecar",
-    "dist:portable": "npm run publish:sidecar && npm run build && electron-packager . meeting-notes --platform=win32 --arch=x64 --out=dist/portable --overwrite --extra-resource=sidecar/publish/sidecar"
+    "dist:portable": "npm run publish:sidecar && npm run build && node scripts/pack-portable.mjs"
   },
   "dependencies": {
     "microsoft-cognitiveservices-speech-sdk": "^1.44.1",
