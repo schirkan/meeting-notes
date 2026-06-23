@@ -32,6 +32,7 @@
 - 23.06.2026: IPC-/Store-Erweiterung für Fixed-Config-Status und Persistierung ergänzt (`transcript:get-fixed-config`, `transcript:save-fixed-config`).
 - 23.06.2026: Speaker-UI auf bis zu 30 unterschiedliche Farbcodes erweitert; numerische Speaker-IDs werden auf 30 Farbslots gemappt.
 - 23.06.2026: P1-Debugging für Speech-Service umgesetzt: vollständige Recognizer-Lifecycle-Logs (Session/Speech Start/End), Canceled-Handling auch für ConversationTranscriber und strukturiertere Azure-Fehlermeldungen mit Kontext.
+- 23.06.2026: Arbeitsregel ergänzt: Alle umgesetzten Änderungen werden fortlaufend in der Projektdokumentation protokolliert.
 
 ## Scope
 - Notizen aus Meetings sammeln
@@ -77,3 +78,4 @@
 - 23.06.2026, 18:22 UTC: Verifikation erfolgreich (`npm run typecheck`, `npm run build`, `npm run test:smoke`).
 - 23.06.2026, 18:27 UTC: Speaker-Badge-Farblogik erweitert: `getSpeakerClass` erkennt numerische IDs (`guest/speaker/participant/user`) und mappt zyklisch auf 30 Farbklassen; CSS um `speaker-guest-5` bis `speaker-guest-30` ergänzt.
 - 23.06.2026, 18:35 UTC: AzureTranscriptionService-Diagnostik erweitert (init/start/stop/first-frame, sessionStarted/sessionStopped/speechStartDetected/speechEndDetected, canceled inkl. reason/errorCode/sessionId), Fehler-Mapping auf `AZURE_AUTH_FAILED` vs. `AZURE_RECOGNIZER_FAILED` mit source/mode-Kontext.
+- 23.06.2026, 20:09 UTC: Nutzeranweisung übernommen, alle Änderungen verbindlich in der Doku zu protokollieren; als laufende Arbeitsregel im Current Status ergänzt.
