@@ -6,15 +6,20 @@ type TranscriptPanelProps = {
   transcriptListRef: RefObject<HTMLUListElement | null>
   getSpeakerClass: (speaker: string) => string
   getSpeakerLabel: (speaker: string) => string
+  canCopyTranscript: boolean
+  onCopyTranscript: () => Promise<void>
 }
 
 export function TranscriptPanel(props: TranscriptPanelProps) {
-  const { segments, transcriptListRef, getSpeakerClass, getSpeakerLabel } = props
+  const { segments, transcriptListRef, getSpeakerClass, getSpeakerLabel, canCopyTranscript, onCopyTranscript } = props
 
   return (
     <section className="panel transcript-panel">
       <div className="panel-header">
         <h2>Transkript</h2>
+        <button className="hero-icon-button transcript-copy-button" type="button" onClick={() => void onCopyTranscript()} disabled={!canCopyTranscript} aria-label="Transkript kopieren">
+          ⧉
+        </button>
       </div>
       {segments.length === 0 ? (
         <p className="empty">Noch keine Daten.</p>

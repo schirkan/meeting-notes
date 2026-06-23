@@ -24,7 +24,7 @@ export function DebugLogPanel(props: DebugLogPanelProps) {
             <span className="toggle-indicator">−</span>
           </>
         ) : (
-          <span className="debug-log-bug-icon" aria-hidden="true">🐞</span>
+          <span className="debug-log-bug-icon" aria-hidden="true">⚠️</span>
         )}
       </button>
 

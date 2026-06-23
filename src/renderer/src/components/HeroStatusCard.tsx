@@ -14,7 +14,7 @@ type HeroStatusCardProps = {
   getSpeakerLabel: (speaker: string) => string
   onOpenSettingsDialog: () => void
   onToggleRecording: () => Promise<void>
-  onCopyTranscript: () => Promise<void>
+  onResetTranscript: () => void
 }
 
 export function HeroStatusCard(props: HeroStatusCardProps) {
@@ -32,7 +32,7 @@ export function HeroStatusCard(props: HeroStatusCardProps) {
     getSpeakerLabel,
     onOpenSettingsDialog,
     onToggleRecording,
-    onCopyTranscript
+    onResetTranscript
   } = props
 
   return (
@@ -52,10 +52,10 @@ export function HeroStatusCard(props: HeroStatusCardProps) {
           onClick={() => void onToggleRecording()}
           disabled={status.running ? false : isStarting || startDisabled || !!runtimeIssue}
         >
-          {status.running ? 'Stop' : isStarting ? 'Startet ...' : 'Start'}
+          {status.running ? '■ Stop' : isStarting ? '◌ Startet ...' : '▶ Start'}
         </button>
-        <button className="ghost-button" type="button" onClick={() => void onCopyTranscript()} disabled={finalCount === 0}>
-          TXT kopieren
+        <button className="ghost-button" type="button" onClick={onResetTranscript} disabled={finalCount === 0 && !startedAtLabel.trim().replace(/-/g, '')}>
+          🗑 Löschen
         </button>
       </div>
       <div className="hero-stats">
