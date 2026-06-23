@@ -28,9 +28,9 @@ npm install
 
 ### Azure konfigurieren
 1. Beispiel kopieren:
-   - `config/azure.fixed.example.json` -> `config/azure.fixed.json`
+   - `config/azure.example.json` -> `config/azure.json`
    - `config/user-settings.example.json` -> `config/user-settings.json`
-2. In `config/azure.fixed.json` den Azure Speech API-Key direkt im Feld `speechKey` eintragen
+2. In `config/azure.json` den Azure Speech API-Key direkt im Feld `speechKey` eintragen
 3. Optional: Proxy für Azure Speech unter `proxy` konfigurieren (`host`, `port`, optional `username`/`password`)
 
 ## Entwicklung

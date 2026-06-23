@@ -214,7 +214,7 @@ async function startReal(): Promise<void> {
 
   const fixedAzure = await loadFixedAzureConfig()
   if (!fixedAzure) {
-    throw new Error('Azure Fixed Config fehlt oder ist ungültig (config/azure.fixed.json).')
+    throw new Error('Azure Fixed Config fehlt oder ist ungültig (config/azure.json).')
   }
 
   azureService = new AzureTranscriptionService(fixedAzure, userSettings, (segment) => {

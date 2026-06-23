@@ -10,7 +10,7 @@ import {
 } from '@shared/config-contract'
 
 const CONFIG_DIR = join(process.cwd(), 'config')
-const AZURE_FIXED_PATH = join(CONFIG_DIR, 'azure.fixed.json')
+const AZURE_FIXED_PATH = join(CONFIG_DIR, 'azure.json')
 const USER_SETTINGS_PATH = join(CONFIG_DIR, 'user-settings.json')
 
 export async function loadUserSettings(): Promise<UserSettings> {

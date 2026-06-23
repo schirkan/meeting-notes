@@ -414,7 +414,7 @@ export function App() {
 
       {fixedConfigState?.exists === false && (
         <section className="hint">
-          Azure-Konfiguration fehlt. Bitte <code>config/azure.fixed.json</code> im Formular unten speichern.
+          Azure-Konfiguration fehlt. Bitte <code>config/azure.json</code> im Formular unten speichern.
         </section>
       )}
 
@@ -586,7 +586,7 @@ export function App() {
               <>
                 {!fixedConfigState?.exists && (
                   <div className="settings-inline-hint">
-                    Keine gültige <code>config/azure.fixed.json</code> gefunden. Bitte jetzt anlegen.
+                    Keine gültige <code>config/azure.json</code> gefunden. Bitte jetzt anlegen.
                   </div>
                 )}
 
