@@ -28,6 +28,8 @@
 - 18.06.2026: Projektdokumentation und betroffene Specs synchronisiert (`README.md`, `SPEC-v0.1.md`, `DECISIONS.md`, `specs/T-103.md`, `specs/T-303.md`, `specs/T-400*.md`, `specs/T-401.md`, `specs/T-402.md`, `specs/T-404.md`).
 - 23.06.2026: Git-Sync auf `origin/main` (`b3772d1 -> 167af50`) durchgeführt und Build-/Typecheck-/Smoke-Gates erneut grün verifiziert.
 - 23.06.2026: Continuous Language Identification (LID) in Azure-Recognizern aktiviert (inkl. `LanguageIdMode=Continuous` + AutoDetect-Konfiguration), erkannte Sprache in Segmenten/Export ergänzt sowie Smoke-Test auf aktuelles UI angepasst.
+- 23.06.2026: Neues Azure-Konfigurationsformular umgesetzt: initial sichtbar bei fehlender `config/azure.fixed.json`, zusätzlich dauerhaft über den Einstellungsbereich aufrufbar.
+- 23.06.2026: IPC-/Store-Erweiterung für Fixed-Config-Status und Persistierung ergänzt (`transcript:get-fixed-config`, `transcript:save-fixed-config`).
 
 ## Scope
 - Notizen aus Meetings sammeln
@@ -69,3 +71,5 @@
 - 18.06.2026, 05:45 UTC: Doku/Specs auf Commit-Stand aktualisiert (Proxy-Support, Wegfall `recognitionMode`, UI-Refresh inkl. Speaker-Alias-Mapping, Clipboard-Export mit Header-Metadaten).
 - 23.06.2026, 17:47 UTC: Repository per Fast-Forward synchronisiert (`b3772d1 -> 167af50`), anschließend `npm run typecheck`, `npm run build` und `npm run test:smoke` erfolgreich ausgeführt.
 - 23.06.2026, 17:58 UTC: Continuous LID + Diarization-Pfad aktualisiert (AutoDetect in SpeechRecognizer + ConversationTranscriber, `SpeechServiceConnection_LanguageIdMode=Continuous`, Sprachkennzeichnung im UI/Export), Smoke-Test auf aktuelles UI repariert.
+- 23.06.2026, 18:20 UTC: Feature „Azure-Config-Formular“ implementiert: Renderer-Form mit Validierung (Endpoint/Region/Speech Key/Proxy), Auto-Open bei fehlender Config-Datei, zusätzlicher Einstieg im Settings-Panel; Main/Preload/Store um neue IPC-Aufrufe erweitert.
+- 23.06.2026, 18:22 UTC: Verifikation erfolgreich (`npm run typecheck`, `npm run build`, `npm run test:smoke`).

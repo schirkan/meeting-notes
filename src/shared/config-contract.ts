@@ -26,6 +26,12 @@ export interface ResolvedAppConfig {
   user: UserSettings
 }
 
+export interface FixedAzureConfigState {
+  exists: boolean
+  path: string
+  config: FixedAzureConfig | null
+}
+
 export const DEFAULT_USER_SETTINGS: UserSettings = {
   language: 'de-DE',
   devices: {

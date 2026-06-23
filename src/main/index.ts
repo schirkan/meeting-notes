@@ -11,7 +11,13 @@ import {
 import { type DecodedFrame } from './frame-protocol'
 import { SidecarSession, listSidecarDevices } from './sidecar-manager'
 import { AzureTranscriptionService } from './azure-transcription-service'
-import { loadFixedAzureConfig, loadUserSettings, saveUserSettings } from './settings-store'
+import {
+  getFixedAzureConfigState,
+  loadFixedAzureConfig,
+  loadUserSettings,
+  saveFixedAzureConfig,
+  saveUserSettings
+} from './settings-store'
 
 const sidecarSession = new SidecarSession()
 
@@ -279,6 +285,29 @@ function registerIpc(): void {
   ipcMain.handle('transcript:get-settings', async () => {
     appendDebugLog('ipc', 'transcript:get-settings aufgerufen.')
     return userSettings
+  })
+
+  ipcMain.handle('transcript:get-fixed-config', async () => {
+    appendDebugLog('ipc', 'transcript:get-fixed-config aufgerufen.')
+    return getFixedAzureConfigState()
+  })
+
+  ipcMain.handle('transcript:save-fixed-config', async (_event, payload) => {
+    appendDebugLog('ipc', 'transcript:save-fixed-config aufgerufen.')
+
+    try {
+      const saved = await saveFixedAzureConfig(payload)
+      appendDebugLog('main', 'Azure Fixed Config gespeichert.')
+      return {
+        exists: true,
+        path: (await getFixedAzureConfigState()).path,
+        config: saved
+      }
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error)
+      emitError({ code: 'SETTINGS_PERSIST_FAILED', message })
+      throw error
+    }
   })
 
   ipcMain.handle('transcript:save-settings', async (_event, payload) => {
