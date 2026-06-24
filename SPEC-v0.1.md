@@ -54,9 +54,10 @@ Ein portabler, unsignierter Desktop-PoC (Node.js + Electron + React), der parall
 
 ## 6. Konfiguration
 - API-Konfiguration (z. B. Azure-Parameter) über fest verdrahtete JSON-Datei
-- Azure-Key wird direkt in der Fixed-Config (`speechKey`) hinterlegt
+- Azure-Konfiguration liegt in `config/azure.json`; der Azure-Key wird dort direkt im Feld `speechKey` hinterlegt
 - Optionaler Azure-Proxy über `proxy.host`, `proxy.port` sowie optional `proxy.username`/`proxy.password`
 - Kein vollwertiger Konfigurationseditor in der UI für den PoC
+- Legacy-Datei `config/azure.fixed.json` ist obsolet und nicht mehr Teil des Laufzeitpfads
 
 ## 6.1 Audioformat für Azure-Ingest (Implementierungsstand)
 - Sidecar resampelt Mic- und Speaker-Frames auf ein einheitliches Zielformat:

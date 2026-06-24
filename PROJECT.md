@@ -33,6 +33,9 @@
 - 23.06.2026: Speaker-UI auf bis zu 30 unterschiedliche Farbcodes erweitert; numerische Speaker-IDs werden auf 30 Farbslots gemappt.
 - 23.06.2026: P1-Debugging für Speech-Service umgesetzt: vollständige Recognizer-Lifecycle-Logs (Session/Speech Start/End), Canceled-Handling auch für ConversationTranscriber und strukturiertere Azure-Fehlermeldungen mit Kontext.
 - 23.06.2026: Arbeitsregel ergänzt: Alle umgesetzten Änderungen werden fortlaufend in der Projektdokumentation protokolliert.
+- 24.06.2026: Git-Sync auf `origin/main` durchgeführt (`53c1311 -> d5cd5ac`) und die enthaltenen Änderungen analysiert (Azure-Config-Vereinheitlichung, UI-Komponentisierung, State-Refactor via `use-app-state`, Mobile/Dialog-Style-Fixes).
+- 24.06.2026: Lokale Legacy-Datei `config/azure.fixed.json` auf Anweisung endgültig entfernt (Cleanup nach Config-Migration auf `config/azure.json`).
+- 24.06.2026: Readme/Spezifikation nachgezogen: Migration auf `config/azure.json` explizit dokumentiert und Legacy-Hinweise zu `config/azure.fixed.json` in README, `SPEC-v0.1.md` und `specs/T-103.md` aktualisiert.
 
 ## Scope
 - Notizen aus Meetings sammeln
@@ -79,3 +82,6 @@
 - 23.06.2026, 18:27 UTC: Speaker-Badge-Farblogik erweitert: `getSpeakerClass` erkennt numerische IDs (`guest/speaker/participant/user`) und mappt zyklisch auf 30 Farbklassen; CSS um `speaker-guest-5` bis `speaker-guest-30` ergänzt.
 - 23.06.2026, 18:35 UTC: AzureTranscriptionService-Diagnostik erweitert (init/start/stop/first-frame, sessionStarted/sessionStopped/speechStartDetected/speechEndDetected, canceled inkl. reason/errorCode/sessionId), Fehler-Mapping auf `AZURE_AUTH_FAILED` vs. `AZURE_RECOGNIZER_FAILED` mit source/mode-Kontext.
 - 23.06.2026, 20:09 UTC: Nutzeranweisung übernommen, alle Änderungen verbindlich in der Doku zu protokollieren; als laufende Arbeitsregel im Current Status ergänzt.
+- 24.06.2026, 11:58 UTC: Repository per Fast-Forward synchronisiert (`53c1311 -> d5cd5ac`), fünf neue Feature-/Fix-Commits geprüft (Azure-Config auf `AzureConfig`/`config/azure.json`, UI in Komponenten zerlegt, App-State in `use-app-state` ausgelagert inkl. Transkript-Reset, Dialog-/Mobile-Styles bereinigt).
+- 24.06.2026, 12:36 UTC: Datei `config/azure.fixed.json` auf explizite Nutzeranweisung endgültig gelöscht; Verifikation per `Test-Path` durchgeführt (Ergebnis: `DELETED`).
+- 24.06.2026, 12:39 UTC: Dokumentation konsistent nachgezogen: README (`Azure konfigurieren`) um Legacy-Hinweis ergänzt, `SPEC-v0.1.md` Abschnitt 6 auf `config/azure.json` umgestellt, `specs/T-103.md` sprachlich/inhaltlich auf aktuellen Config-Pfad aktualisiert.
