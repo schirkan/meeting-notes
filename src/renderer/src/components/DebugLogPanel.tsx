@@ -3,33 +3,52 @@ import type { DebugLogEntry } from '@shared/transcript-contract'
 type DebugLogPanelProps = {
   debugOpen: boolean
   debugLog: DebugLogEntry[]
-  setDebugOpen: React.Dispatch<React.SetStateAction<boolean>>
+  onOpenDebug: () => void
+  onCloseDebug: () => void
+  onClearDebug: () => Promise<void>
 }
 
 export function DebugLogPanel(props: DebugLogPanelProps) {
-  const { debugOpen, debugLog, setDebugOpen } = props
+  const { debugOpen, debugLog, onOpenDebug, onCloseDebug, onClearDebug } = props
 
   return (
     <section className={`debug-log-dock ${debugOpen ? 'open' : 'closed'}`}>
-      <button
-        className={`debug-log-toggle ${debugOpen ? 'panel-toggle' : ''}`.trim()}
-        type="button"
-        onClick={() => setDebugOpen((prev) => !prev)}
-        aria-expanded={debugOpen}
-        aria-label={debugOpen ? 'Debug-Log schließen' : 'Debug-Log öffnen'}
-      >
-        {debugOpen ? (
-          <>
-            <h2>Debug-Log</h2>
-            <span className="toggle-indicator">−</span>
-          </>
-        ) : (
+      {!debugOpen && (
+        <button
+          className="debug-log-open-button"
+          type="button"
+          onClick={onOpenDebug}
+          aria-expanded={false}
+          aria-label="Debug-Log öffnen"
+        >
           <span className="debug-log-bug-icon" aria-hidden="true">⚠️</span>
-        )}
-      </button>
+        </button>
+      )}
 
       {debugOpen && (
         <div className="panel debug-log-panel">
+          <div className="debug-log-header">
+            <h2>Debug-Log</h2>
+            <div className="debug-log-actions">
+              <button
+                className="debug-log-clear-button"
+                type="button"
+                onClick={() => void onClearDebug()}
+              >
+                Log löschen
+              </button>
+              <button
+                className="debug-log-close-button"
+                type="button"
+                onClick={onCloseDebug}
+                aria-expanded={true}
+                aria-label="Debug-Log schließen"
+              >
+                <span className="toggle-indicator">−</span>
+              </button>
+            </div>
+          </div>
+
           {debugLog.length === 0 ? (
             <p className="empty">Noch keine Debug-Einträge.</p>
           ) : (

@@ -47,6 +47,7 @@ Ein portabler, unsignierter Desktop-PoC (Node.js + Electron + React), der parall
 - Verbesserte Sprecherdarstellung über visuelle Speaker-Badges/Farben
 - Sprecher-Alias-Mapping im UI (manuelle Anzeigenamen pro erkannter Speaker-ID)
 - Diagnostikbereich mit laufendem Debug-Log (Main/Sidecar/IPC)
+- Diagnostikbereich mit laufendem Debug-Log (Main/Sidecar/IPC), separaten Öffnen-/Schließen-Aktionen und manueller Log-Leerung
 - Nutzer kann in der UI ändern:
   - Sprache
   - Audio-Devices (wenn nicht Default)

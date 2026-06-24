@@ -126,6 +126,7 @@ export interface TranscriptApi {
   stop: () => Promise<TranscriptStatus>
   getStatus: () => Promise<TranscriptStatus>
   getDebugLog: () => Promise<DebugLogEntry[]>
+  clearDebugLog: () => Promise<{ cleared: number }>
   getDevices: () => Promise<AudioDeviceSnapshot>
   getSettings: () => Promise<import('./config-contract').UserSettings>
   getConfig: () => Promise<import('./config-contract').AzureConfigState>

@@ -36,6 +36,9 @@
 - 24.06.2026: Git-Sync auf `origin/main` durchgeführt (`53c1311 -> d5cd5ac`) und die enthaltenen Änderungen analysiert (Azure-Config-Vereinheitlichung, UI-Komponentisierung, State-Refactor via `use-app-state`, Mobile/Dialog-Style-Fixes).
 - 24.06.2026: Lokale Legacy-Datei `config/azure.fixed.json` auf Anweisung endgültig entfernt (Cleanup nach Config-Migration auf `config/azure.json`).
 - 24.06.2026: Readme/Spezifikation nachgezogen: Migration auf `config/azure.json` explizit dokumentiert und Legacy-Hinweise zu `config/azure.fixed.json` in README, `SPEC-v0.1.md` und `specs/T-103.md` aktualisiert.
+- 24.06.2026: Debug-/Diagnostik erweitert: zusätzlicher IPC-Call zum Leeren des Debug-Logs (`transcript:clear-debug-log`), Debug-Panel mit eigenem „Log löschen“-Button sowie separaten Öffnen-/Schließen-Buttons; CSS-Transition am Debug-Toggle bereinigt.
+- 24.06.2026: Start-/Konfigurationsdiagnostik im Main-Prozess erweitert (aktive Geräteauflösung, Azure-Config-Summary ohne Secret-Leak, Sidecar-Startparameter, detaillierter Startfehler-Stack im Debug-Log) sowie Azure-Recognizer-Startfehler explizit als Laufzeitfehler ins UI durchgereicht.
+- 24.06.2026: Projektdokumentation für die Debug-Änderungen synchronisiert (`README.md`, `SPEC-v0.1.md`, `specs/T-300-*.md`, `specs/T-400-*.md`).
 
 ## Scope
 - Notizen aus Meetings sammeln
@@ -85,3 +88,6 @@
 - 24.06.2026, 11:58 UTC: Repository per Fast-Forward synchronisiert (`53c1311 -> d5cd5ac`), fünf neue Feature-/Fix-Commits geprüft (Azure-Config auf `AzureConfig`/`config/azure.json`, UI in Komponenten zerlegt, App-State in `use-app-state` ausgelagert inkl. Transkript-Reset, Dialog-/Mobile-Styles bereinigt).
 - 24.06.2026, 12:36 UTC: Datei `config/azure.fixed.json` auf explizite Nutzeranweisung endgültig gelöscht; Verifikation per `Test-Path` durchgeführt (Ergebnis: `DELETED`).
 - 24.06.2026, 12:39 UTC: Dokumentation konsistent nachgezogen: README (`Azure konfigurieren`) um Legacy-Hinweis ergänzt, `SPEC-v0.1.md` Abschnitt 6 auf `config/azure.json` umgestellt, `specs/T-103.md` sprachlich/inhaltlich auf aktuellen Config-Pfad aktualisiert.
+- 24.06.2026, 14:19 UTC: Debug-UX angepasst: Floating-Button nur zum Öffnen, separates Schließen im geöffneten Panel, zusätzlicher „Log löschen“-Button mit UI-Toast; IPC (`transcript:clear-debug-log`) + Preload/Shared-Contract erweitert.
+- 24.06.2026, 14:19 UTC: Logging erweitert (Device-Resolution, Azure-Config-Metadaten inkl. Proxy-/Key-Länge, Sidecar-Startparameter, Stacktrace bei Startfehlern) und Azure-Recognizer-Start-Callbacks so ergänzt, dass Fehler nicht nur im Debug-Log erscheinen, sondern als `AZURE_RECOGNIZER_FAILED` ans UI gehen.
+- 24.06.2026, 14:26 UTC: Doku-Nachpflege zu den Debug-/Logging-Änderungen abgeschlossen (README-Featureliste, SPEC-v0.1 UI-Abschnitt, Specs T-300/T-400 Log ergänzt).

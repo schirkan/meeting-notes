@@ -7,7 +7,7 @@ PoC zur strukturierten Erfassung von Meeting-Transkripten (Electron + React + C#
 - Live-Transkript mit Interim/Final und verbesserter Lesbarkeit
 - Verbesserte Sprecherdarstellung (Speaker-Badges/Farben) inkl. Alias-Mapping
 - Fehler-/Status-Events via IPC
-- Sidecar/Main/IPC-Debug-Log direkt im UI
+- Sidecar/Main/IPC-Debug-Log direkt im UI (separate Öffnen/Schließen-Aktionen + Log löschen)
 - Persistente Einstellungen (Sprache, Devices)
 - TXT-Export (Clipboard) inkl. Header-Metadaten (Datum, Startzeit, Dauer)
 - C#-Sidecar (WASAPI Mic + Loopback) mit Frame-Protokoll über Named Pipe

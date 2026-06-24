@@ -187,6 +187,22 @@ function pushFrameToAzure(frame: DecodedFrame): void {
   }
 }
 
+function resolveDeviceName(
+  devices: AudioDeviceSnapshot,
+  flow: 'input' | 'output',
+  id: string | null
+): string {
+  const list = flow === 'input' ? devices.inputs : devices.outputs
+
+  if (!id) {
+    const defaultDevice = list.find((device) => device.isDefault)
+    return defaultDevice ? `${defaultDevice.name} (Default)` : 'Default (nicht gefunden)'
+  }
+
+  const selected = list.find((device) => device.id === id)
+  return selected ? selected.name : `unbekannt (${id})`
+}
+
 function broadcastStatus(): void {
   appendDebugLog('status', `Status geändert: ${status.running ? 'running' : 'stopped'}.`)
   broadcast('transcript:status', status)
@@ -216,6 +232,11 @@ async function startReal(): Promise<void> {
   appendDebugLog('main', 'startReal aufgerufen.')
   const devices = await refreshDevices()
 
+  appendDebugLog(
+    'main',
+    `Aktive Geräteauswahl: mic=${resolveDeviceName(devices, 'input', userSettings.devices.micId)} | speakerLoopback=${resolveDeviceName(devices, 'output', userSettings.devices.speakerLoopbackId)}.`
+  )
+
   if (devices.outputs.length === 0) {
     throw new Error('Kein Speaker-Loopback-Device verfügbar.')
   }
@@ -225,12 +246,22 @@ async function startReal(): Promise<void> {
     throw new Error('Azure-Konfiguration fehlt oder ist ungültig (config/azure.json).')
   }
 
+  appendDebugLog(
+    'main',
+    `Azure-Config geladen: endpoint=${azureConfig.endpoint}, region=${azureConfig.region}, speechKeyLength=${azureConfig.speechKey.length}, proxy=${azureConfig.proxy ? `${azureConfig.proxy.host}:${azureConfig.proxy.port}` : 'aus'}.`
+  )
+
   azureService = new AzureTranscriptionService(azureConfig, userSettings, (segment) => {
     broadcast('transcript:segment', segment)
   }, emitError, (message, level) => appendDebugLog('main', message, level))
 
   appendDebugLog('main', 'AzureTranscriptionService.init aufgerufen.')
   await azureService.init()
+
+  appendDebugLog(
+    'main',
+    `Sidecar-Start vorbereitet: sampleRate=16000, language=${userSettings.language}, micId=${userSettings.devices.micId ?? 'default'}, speakerId=${userSettings.devices.speakerLoopbackId ?? 'default'}.`
+  )
 
   await sidecarSession.start(
     {
@@ -264,6 +295,9 @@ function registerIpc(): void {
       status.running = false
       delete status.startedAt
       const message = error instanceof Error ? error.message : 'Unbekannter Fehler beim Start.'
+      const detail = error instanceof Error && error.stack ? error.stack : String(error)
+
+      appendDebugLog('main', `Startfehler Details: ${detail}`, 'error')
 
       const code = message.includes('Loopback')
         ? 'LOOPBACK_REQUIRED'
@@ -286,6 +320,12 @@ function registerIpc(): void {
   ipcMain.handle('transcript:get-debug-log', async () => {
     appendDebugLog('ipc', 'transcript:get-debug-log aufgerufen.')
     return debugLog
+  })
+
+  ipcMain.handle('transcript:clear-debug-log', async () => {
+    const cleared = debugLog.length
+    debugLog.length = 0
+    return { cleared }
   })
 
   ipcMain.handle('transcript:get-devices', async () => refreshDevices())

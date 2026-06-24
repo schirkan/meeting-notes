@@ -23,15 +23,16 @@ export function App() {
     knownSpeakers,
     latestSegment,
     onCopyTranscript,
+    onClearDebugLog,
     onOpenSettingsDialog,
     onResetTranscript,
     onSaveConfig,
     onSaveSettings,
     onToggleRecording,
+    openDebugPanel,
     runtimeIssue,
     segments,
     setConfigDraft,
-    setDebugOpen,
     setSettings,
     setSpeakerAliases,
     settings,
@@ -44,6 +45,7 @@ export function App() {
     statusLabel,
     toast,
     transcriptListRef,
+    closeDebugPanel,
     closeSettingsDialog,
     dismissToast
   } = useAppState()
@@ -93,7 +95,9 @@ export function App() {
       <DebugLogPanel
         debugOpen={debugOpen}
         debugLog={debugLog}
-        setDebugOpen={setDebugOpen}
+        onOpenDebug={openDebugPanel}
+        onCloseDebug={closeDebugPanel}
+        onClearDebug={onClearDebugLog}
       />
 
       <SettingsDialog isOpen={settingsDialogOpen} onClose={closeSettingsDialog}>

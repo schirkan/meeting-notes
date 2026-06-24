@@ -22,3 +22,5 @@ Electron Main als Orchestrator für Sidecar, Azure Speech und IPC-Eventstream um
 ## Log
 - 2026-06-03: Spec detailliert ausgefüllt.
 - 2026-06-06: Main-Orchestrierung umgesetzt (`src/main/*`): Sidecar-Start/Stop + Pipe-Frame-Parsing + optionale Azure-Speech-Pipeline + IPC-Status/Fehler/Segment-Streaming.
+- 2026-06-24: Diagnostik im Main erweitert: detaillierte Startpfad-Logs (aufgelöste Device-Auswahl, Azure-Konfig-Metadaten ohne Secret-Leak, Sidecar-Startparameter) sowie zusätzliche Startfehler-Details (Stacktrace) im Debug-Log.
+- 2026-06-24: Azure-Recognizer-Startfehler (`startContinuousRecognitionAsync`/`startTranscribingAsync`) werden explizit als `AZURE_RECOGNIZER_FAILED` in den UI-Fehlerkanal emittiert (nicht nur Debug-Log).

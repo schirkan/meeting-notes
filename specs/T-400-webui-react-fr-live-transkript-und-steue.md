@@ -23,3 +23,4 @@ React-WebUI für Bedienung und Live-Transkript des PoC bereitstellen.
 - 2026-06-03: Spec detailliert ausgefüllt.
 - 2026-06-06: UI erweitert um Settings (Modus/Sprache/Devices), Fehler-/Statusanzeige und Clipboard-Export (`src/renderer/src/App.tsx`).
 - 2026-06-18: UI umfassend modernisiert (Sidebar/Hero-Statuskarte, Start/Stop-Primary-Aktion, einklappbare Settings/Debug-Log-Panels, Laufzeit-/Daueranzeige, Speaker-Alias-Mapping, Toast-Hinweise, überarbeitetes Responsive-Layout).
+- 2026-06-24: Debug-Panel-UX nachgeschärft: separater Floating-Button nur zum Öffnen, eigener Schließen-Button im Panel, zusätzlicher „Log löschen“-Button inkl. Toast-Rückmeldung; störende Toggle-Transition in CSS bereinigt.

@@ -51,7 +51,7 @@ export function useAppState() {
   const [speakerAliases, setSpeakerAliases] = useState<Record<string, string>>({})
   const [now, setNow] = useState(() => Date.now())
   const [sessionStartedAt, setSessionStartedAt] = useState<string | null>(null)
-  const transcriptListRef = useRef<HTMLUListElement | null>(null)
+  const transcriptListRef = useRef<HTMLUListElement>(null)
 
   useEffect(() => {
     const transcriptApi = window.transcriptApi
@@ -288,6 +288,7 @@ export function useAppState() {
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Start fehlgeschlagen.'
       setLastError({ code: 'UI_START_FAILED', message })
+      setToast({ message: `UI_START_FAILED: ${message}`, variant: 'error', persistent: true })
     } finally {
       setIsStarting(false)
     }
@@ -362,6 +363,17 @@ export function useAppState() {
     }
   }
 
+  const onClearDebugLog = async () => {
+    try {
+      const result = await window.transcriptApi.clearDebugLog()
+      setDebugLog([])
+      setToast({ message: `Debug-Log gelöscht (${result.cleared} Einträge).`, variant: 'info', persistent: false })
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Debug-Log konnte nicht gelöscht werden.'
+      setToast({ message, variant: 'error', persistent: true })
+    }
+  }
+
   const getSpeakerClass = (speaker: string) => {
     const normalized = speaker.toLowerCase()
 
@@ -411,7 +423,6 @@ export function useAppState() {
     runtimeIssue,
     segments,
     setConfigDraft,
-    setDebugOpen,
     setSettings,
     setSpeakerAliases,
     settings,
@@ -424,6 +435,9 @@ export function useAppState() {
     statusLabel,
     toast,
     transcriptListRef,
+    openDebugPanel: () => setDebugOpen(true),
+    closeDebugPanel: () => setDebugOpen(false),
+    onClearDebugLog,
     closeSettingsDialog: () => setSettingsDialogOpen(false),
     dismissToast: () => setToast(null)
   }

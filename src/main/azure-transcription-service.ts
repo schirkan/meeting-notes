@@ -128,6 +128,10 @@ export class AzureTranscriptionService {
       }, (err: string) => {
         const message = String(err)
         this.onDebug?.(`startTranscribingAsync Fehler für ${frame.source}: ${message}`, 'error')
+        this.onError({
+          code: 'AZURE_RECOGNIZER_FAILED',
+          message: `[${frame.source}/conversationTranscriber] startTranscribingAsync: ${message}`
+        })
       })
 
       const created: StreamState = {
@@ -174,6 +178,10 @@ export class AzureTranscriptionService {
     }, (err: string) => {
       const message = String(err)
       this.onDebug?.(`startContinuousRecognitionAsync Fehler für ${frame.source}: ${message}`, 'error')
+      this.onError({
+        code: 'AZURE_RECOGNIZER_FAILED',
+        message: `[${frame.source}/speechRecognizer] startContinuousRecognitionAsync: ${message}`
+      })
     })
 
     const created: StreamState = {

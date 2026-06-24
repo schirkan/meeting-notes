@@ -14,6 +14,7 @@ const api: TranscriptApi = {
   stop: () => ipcRenderer.invoke('transcript:stop'),
   getStatus: () => ipcRenderer.invoke('transcript:get-status'),
   getDebugLog: () => ipcRenderer.invoke('transcript:get-debug-log') as Promise<DebugLogEntry[]>,
+  clearDebugLog: () => ipcRenderer.invoke('transcript:clear-debug-log') as Promise<{ cleared: number }>,
   getDevices: () => ipcRenderer.invoke('transcript:get-devices') as Promise<AudioDeviceSnapshot>,
   getSettings: () => ipcRenderer.invoke('transcript:get-settings') as Promise<UserSettings>,
   getConfig: () => ipcRenderer.invoke('transcript:get-config') as Promise<AzureConfigState>,

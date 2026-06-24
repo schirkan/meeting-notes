@@ -819,18 +819,8 @@ ul {
   width: auto;
 }
 
-.debug-log-toggle {
+.debug-log-open-button {
   pointer-events: auto;
-}
-
-.debug-log-dock.open .debug-log-toggle {
-  padding: 0;
-  background: transparent;
-  color: inherit;
-  border-radius: 0;
-}
-
-.debug-log-dock.closed .debug-log-toggle {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -842,14 +832,16 @@ ul {
   background: rgba(28, 25, 23, 0.94);
   color: #fafaf9;
   box-shadow: 0 18px 34px rgba(28, 25, 23, 0.28);
+  transition: background-color 160ms ease;
 }
 
-.debug-log-dock.closed .debug-log-toggle:hover:not(:disabled) {
-  transform: translateY(-2px);
+.debug-log-open-button:hover:not(:disabled) {
+  transform: none;
+  background: rgba(28, 25, 23, 1);
 }
 
-.debug-log-dock.closed .debug-log-toggle:active:not(:disabled) {
-  transform: translateY(1px) scale(0.97);
+.debug-log-open-button:active:not(:disabled) {
+  transform: none;
 }
 
 .debug-log-bug-icon {
@@ -859,7 +851,7 @@ ul {
 }
 
 .debug-log-dock.open .debug-log-panel {
-  margin-top: 12px;
+  margin-top: 0;
   max-height: min(46vh, 420px);
   overflow: hidden;
   padding: 0;
@@ -869,6 +861,60 @@ ul {
   box-shadow: none;
   backdrop-filter: none;
   pointer-events: auto;
+}
+
+.debug-log-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.debug-log-header h2 {
+  margin: 0;
+  font-size: 1.35rem;
+}
+
+.debug-log-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.debug-log-clear-button,
+.debug-log-close-button {
+  transition: background-color 160ms ease;
+}
+
+.debug-log-clear-button {
+  padding: 8px 12px;
+  border-radius: 999px;
+  background: rgba(28, 25, 23, 0.08);
+  color: #44403c;
+}
+
+.debug-log-close-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border-radius: 50%;
+  background: rgba(28, 25, 23, 0.08);
+  color: #44403c;
+  box-shadow: none;
+}
+
+.debug-log-clear-button:hover:not(:disabled),
+.debug-log-close-button:hover:not(:disabled) {
+  transform: none;
+  background: rgba(28, 25, 23, 0.14);
+}
+
+.debug-log-clear-button:active:not(:disabled),
+.debug-log-close-button:active:not(:disabled) {
+  transform: none;
 }
 
 .debug-log-table-wrap {
