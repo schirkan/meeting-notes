@@ -1,11 +1,9 @@
 import { randomUUID } from 'node:crypto'
-import { createRequire } from 'node:module'
 import type { AzureConfig, UserSettings } from '@shared/config-contract'
 import type { TranscriptError, TranscriptSegment, TranscriptSource } from '@shared/transcript-contract'
 import type { DecodedFrame } from './frame-protocol'
 
 type AzureSdk = typeof import('microsoft-cognitiveservices-speech-sdk')
-const require = createRequire(import.meta.url)
 
 type StreamState = {
   pushStream: any
@@ -54,7 +52,7 @@ export class AzureTranscriptionService {
 
   async init(): Promise<void> {
     this.onDebug?.('AzureTranscriptionService.init: SDK wird geladen.')
-    this.sdk = require('microsoft-cognitiveservices-speech-sdk') as AzureSdk
+    this.sdk = await import('microsoft-cognitiveservices-speech-sdk') as AzureSdk
 
     this.speechConfig = this.sdk.SpeechConfig.fromSubscription(this.azureConfig.speechKey, this.azureConfig.region)
     this.speechConfig.speechRecognitionLanguage = this.settings.language
