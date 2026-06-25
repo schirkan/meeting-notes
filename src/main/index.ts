@@ -85,6 +85,19 @@ function attachRendererDiagnostics(win: BrowserWindow): void {
   } catch {
     // ignore diagnostics errors in dev
   }
+
+  // Debugger sauber abkoppeln, sobald das Fenster zerstört wird (verhindert
+  // CDP-Leaks bei Hot-Reloads, Devtools-Öffnungen oder mehreren Fensterzyklen).
+  const detach = () => {
+    try {
+      if (wc.debugger.isAttached()) wc.debugger.detach()
+    } catch {
+      // ignore detach errors
+    }
+  }
+
+  wc.once('destroyed', detach)
+  wc.once('render-process-gone', detach)
 }
 
 function createWindow(): void {
