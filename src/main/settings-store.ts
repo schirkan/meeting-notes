@@ -6,7 +6,8 @@ import {
   normalizeUserSettings,
   type AzureConfig,
   type UserSettings,
-  validateAzureConfig
+  validateAzureConfig,
+  validateUserSettings
 } from '@shared/config-contract'
 
 const CONFIG_DIR = join(process.cwd(), 'config')
@@ -25,6 +26,12 @@ export async function loadUserSettings(): Promise<UserSettings> {
 
 export async function saveUserSettings(settings: UserSettings): Promise<UserSettings> {
   const normalized = normalizeUserSettings(settings)
+  const validation = validateUserSettings(normalized)
+  if (!validation.valid) {
+    for (const warning of validation.warnings) {
+      console.warn(`[settings-store] ${warning}`)
+    }
+  }
   await mkdir(dirname(USER_SETTINGS_PATH), { recursive: true })
   await writeFile(USER_SETTINGS_PATH, `${JSON.stringify(normalized, null, 2)}\n`, 'utf8')
   return normalized

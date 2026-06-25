@@ -18,6 +18,7 @@ import {
   saveAzureConfig,
   saveUserSettings
 } from './settings-store'
+import { validateUserSettings } from '@shared/config-contract'
 
 const sidecarSession = new SidecarSession()
 
@@ -398,6 +399,13 @@ function registerIpc(): void {
     try {
       userSettings = await saveUserSettings(payload)
       appendDebugLog('main', 'User-Settings gespeichert.')
+
+      // Sichtbares Feedback, falls Eingaben auf Defaults korrigiert wurden
+      const validation = validateUserSettings(userSettings)
+      for (const warning of validation.warnings) {
+        appendDebugLog('main', warning, 'warn')
+      }
+
       return userSettings
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error)

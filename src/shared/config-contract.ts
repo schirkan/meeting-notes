@@ -42,6 +42,10 @@ export const DEFAULT_USER_SETTINGS: UserSettings = {
 
 const BCP47_PATTERN = /^[a-z]{2,3}-[A-Z]{2}$/
 
+export function isValidBcp47Language(input: unknown): input is string {
+  return typeof input === 'string' && BCP47_PATTERN.test(input.trim())
+}
+
 export function normalizeUserSettings(input: Partial<UserSettings> | null | undefined): UserSettings {
   const language = input?.language?.trim()
   const safeLanguage = language && BCP47_PATTERN.test(language) ? language : DEFAULT_USER_SETTINGS.language
@@ -53,6 +57,23 @@ export function normalizeUserSettings(input: Partial<UserSettings> | null | unde
       speakerLoopbackId: input?.devices?.speakerLoopbackId ?? DEFAULT_USER_SETTINGS.devices.speakerLoopbackId
     }
   }
+}
+
+export interface UserSettingsValidation {
+  valid: boolean
+  warnings: string[]
+}
+
+export function validateUserSettings(settings: UserSettings): UserSettingsValidation {
+  const warnings: string[] = []
+
+  if (!isValidBcp47Language(settings.language)) {
+    warnings.push(
+      `Ungültiger Sprachcode "${settings.language}" (erwartet BCP-47, z. B. "de-DE"). Es wird auf "${DEFAULT_USER_SETTINGS.language}" zurückgefallen.`
+    )
+  }
+
+  return { valid: warnings.length === 0, warnings }
 }
 
 export function validateAzureConfig(input: unknown): input is AzureConfig {
