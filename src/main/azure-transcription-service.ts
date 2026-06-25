@@ -58,10 +58,11 @@ export class AzureTranscriptionService {
     this.speechConfig.speechRecognitionLanguage = this.settings.language
     this.speechConfig.setProperty('SpeechServiceConnection_Endpoint', this.azureConfig.endpoint)
     this.speechConfig.setProperty('SpeechServiceResponse_DiarizeIntermediateResults', 'true')
+    this.speechConfig.setProperty('SpeechServiceResponse_InterimResults', this.azureConfig.interimResults ? 'true' : 'false')
     this.speechConfig.setProperty('SpeechServiceConnection_LanguageIdMode', 'Continuous')
 
     this.onDebug?.(
-      `AzureTranscriptionService.init: Konfiguration aktiv (region=${this.azureConfig.region}, language=${this.settings.language}, diarizeInterim=true, lidMode=Continuous).`
+      `AzureTranscriptionService.init: Konfiguration aktiv (region=${this.azureConfig.region}, language=${this.settings.language}, diarizeInterim=true, lidMode=Continuous, interimResults=${this.azureConfig.interimResults}).`
     )
 
     if (this.azureConfig.proxy) {
