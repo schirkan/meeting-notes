@@ -9,6 +9,14 @@ type StreamState = {
   pushStream: any
   recognizer: any
   mode: 'speechRecognizer' | 'conversationTranscriber'
+  source: TranscriptSource
+  started: boolean
+}
+
+export type AzureAudioFormat = {
+  sampleRate: number
+  bitsPerSample: number
+  channels: number
 }
 
 type RecognitionEvent = {
@@ -124,21 +132,12 @@ export class AzureTranscriptionService {
         this.handleRecognizerCanceled(frame.source, 'conversationTranscriber', event)
       }
 
-      recognizer.startTranscribingAsync(() => {
-        this.onDebug?.(`startTranscribingAsync gestartet für ${frame.source}.`)
-      }, (err: string) => {
-        const message = String(err)
-        this.onDebug?.(`startTranscribingAsync Fehler für ${frame.source}: ${message}`, 'error')
-        this.onError({
-          code: 'AZURE_RECOGNIZER_FAILED',
-          message: `[${frame.source}/conversationTranscriber] startTranscribingAsync: ${message}`
-        })
-      })
-
       const created: StreamState = {
         pushStream,
         recognizer,
-        mode: 'conversationTranscriber'
+        mode: 'conversationTranscriber',
+        source: frame.source,
+        started: false
       }
       this.streams.set(frame.source, created)
       return created
@@ -174,25 +173,87 @@ export class AzureTranscriptionService {
       this.handleRecognizerCanceled(frame.source, 'speechRecognizer', event)
     }
 
-    recognizer.startContinuousRecognitionAsync(() => {
-      this.onDebug?.(`startContinuousRecognitionAsync gestartet für ${frame.source}.`)
-    }, (err: string) => {
-      const message = String(err)
-      this.onDebug?.(`startContinuousRecognitionAsync Fehler für ${frame.source}: ${message}`, 'error')
-      this.onError({
-        code: 'AZURE_RECOGNIZER_FAILED',
-        message: `[${frame.source}/speechRecognizer] startContinuousRecognitionAsync: ${message}`
-      })
-    })
-
     const created: StreamState = {
       pushStream,
       recognizer,
-      mode: 'speechRecognizer'
+      mode: 'speechRecognizer',
+      source: frame.source,
+      started: false
     }
     this.streams.set(frame.source, created)
 
     return created
+  }
+
+  /**
+   * Erstellt und startet beide Recognizer (mic + speaker) für das gegebene Audio-Format.
+   * Wirft, wenn auch nur ein Recognizer-Start fehlschlägt; in diesem Fall werden beide
+   * bereits gestarteten Streams wieder sauber geschlossen.
+   */
+  async start(format: AzureAudioFormat): Promise<void> {
+    if (!this.sdk || !this.speechConfig) {
+      throw new Error('AzureTranscriptionService nicht initialisiert.')
+    }
+
+    if (this.streams.size > 0) {
+      throw new Error('AzureTranscriptionService läuft bereits. Bitte zuerst stop() aufrufen.')
+    }
+
+    this.onDebug?.(
+      `AzureTranscriptionService.start: Starte Recognizer (sampleRate=${format.sampleRate}, bits=${format.bitsPerSample}, channels=${format.channels}).`
+    )
+
+    // Streams vorab für beide Sources erzeugen (lazy über ensureStreamForFrame mit Dummy-Frame-Form)
+    const fakeFrame = (source: TranscriptSource): DecodedFrame => ({
+      source,
+      timestampIso: new Date(0).toISOString(),
+      sequence: 0n,
+      sampleRate: format.sampleRate,
+      bitsPerSample: format.bitsPerSample,
+      channels: format.channels,
+      payload: Buffer.alloc(0)
+    })
+
+    const micState = this.ensureStreamForFrame(fakeFrame('mic'))
+    const speakerState = this.ensureStreamForFrame(fakeFrame('speaker'))
+
+    try {
+      await this.startStream(micState)
+      await this.startStream(speakerState)
+    } catch (error) {
+      // Bei Fehler bereits gestartete Streams wieder schließen
+      await this.stop()
+      throw error
+    }
+
+    this.onDebug?.('AzureTranscriptionService.start: Beide Recognizer laufen.')
+  }
+
+  private startStream(state: StreamState): Promise<void> {
+    return new Promise<void>((resolve, reject) => {
+      if (state.started) {
+        resolve()
+        return
+      }
+
+      const onSuccess = () => {
+        state.started = true
+        this.onDebug?.(`start${state.mode === 'conversationTranscriber' ? 'TranscribingAsync' : 'ContinuousRecognitionAsync'} gestartet für ${state.source}.`)
+        resolve()
+      }
+
+      const onFailure = (err: string) => {
+        const message = String(err)
+        this.onDebug?.(`start${state.mode === 'conversationTranscriber' ? 'TranscribingAsync' : 'ContinuousRecognitionAsync'} Fehler für ${state.source}: ${message}`, 'error')
+        reject(new Error(`[${state.source}/${state.mode}] start failed: ${message}`))
+      }
+
+      if (state.mode === 'conversationTranscriber') {
+        state.recognizer.startTranscribingAsync(onSuccess, onFailure)
+      } else {
+        state.recognizer.startContinuousRecognitionAsync(onSuccess, onFailure)
+      }
+    })
   }
 
   pushFrame(frame: DecodedFrame): void {
@@ -221,10 +282,15 @@ export class AzureTranscriptionService {
       (state) =>
         new Promise<void>((resolve) => {
           const finalize = () => {
-            this.onDebug?.(`Recognizer gestoppt (mode=${state.mode}).`)
-            state.pushStream.close()
-            state.recognizer.close()
+            this.onDebug?.(`Recognizer geschlossen (mode=${state.mode}, started=${state.started}).`)
+            try { state.pushStream.close() } catch { /* ignore */ }
+            try { state.recognizer.close() } catch { /* ignore */ }
             resolve()
+          }
+
+          if (!state.started) {
+            finalize()
+            return
           }
 
           if (state.mode === 'conversationTranscriber') {

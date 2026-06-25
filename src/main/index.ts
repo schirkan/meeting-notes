@@ -258,9 +258,15 @@ async function startReal(): Promise<void> {
   appendDebugLog('main', 'AzureTranscriptionService.init aufgerufen.')
   await azureService.init()
 
+  // Azure-Recognizer explizit starten, damit Start-Fehler (z. B. AZURE_AUTH_FAILED)
+  // als Fehler propagiert werden und der Status nicht fälschlich auf "running" bleibt.
+  const azureAudioFormat = { sampleRate: 16000, bitsPerSample: 16, channels: 1 }
+  appendDebugLog('main', 'AzureTranscriptionService.start aufgerufen.')
+  await azureService.start(azureAudioFormat)
+
   appendDebugLog(
     'main',
-    `Sidecar-Start vorbereitet: sampleRate=16000, language=${userSettings.language}, micId=${userSettings.devices.micId ?? 'default'}, speakerId=${userSettings.devices.speakerLoopbackId ?? 'default'}.`
+    `Sidecar-Start vorbereitet: sampleRate=${azureAudioFormat.sampleRate}, language=${userSettings.language}, micId=${userSettings.devices.micId ?? 'default'}, speakerId=${userSettings.devices.speakerLoopbackId ?? 'default'}.`
   )
 
   await sidecarSession.start(
@@ -307,6 +313,35 @@ function registerIpc(): void {
 
       emitError({ code, message })
       throw error
+    } finally {
+      // Wenn startReal fehlgeschlagen ist, bereits teilweise initialisierte
+      // Ressourcen sauber wieder abbauen (Azure-Service, Sidecar).
+      const stillRunning = status.running
+      if (!stillRunning) {
+        try {
+          if (azureService) {
+            await azureService.stop()
+          }
+        } catch (cleanupError) {
+          appendDebugLog(
+            'main',
+            `Azure-Cleanup nach Fehler fehlgeschlagen: ${cleanupError instanceof Error ? cleanupError.message : String(cleanupError)}`,
+            'error'
+          )
+        } finally {
+          azureService = null
+        }
+
+        try {
+          await sidecarSession.stop()
+        } catch (cleanupError) {
+          appendDebugLog(
+            'main',
+            `Sidecar-Cleanup nach Fehler fehlgeschlagen: ${cleanupError instanceof Error ? cleanupError.message : String(cleanupError)}`,
+            'error'
+          )
+        }
+      }
     }
   })
 
