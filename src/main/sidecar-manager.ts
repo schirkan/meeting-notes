@@ -4,7 +4,7 @@ import { existsSync } from 'node:fs'
 import net from 'node:net'
 import { join } from 'node:path'
 import { app } from 'electron'
-import { splitFrames, type DecodedFrame } from './frame-protocol'
+import { splitFrames, type DecodedFrame, type ProtocolErrorKind, type ProtocolErrorListener } from './frame-protocol'
 import type { AudioDeviceSnapshot, TranscriptError } from '@shared/transcript-contract'
 
 export interface SidecarStartOptions {
@@ -146,12 +146,34 @@ export class SidecarSession {
       this.remainder = Buffer.alloc(0)
     })
 
-    await this.connectPipe(onFrame)
+    await this.connectPipe(onFrame, onDebug)
   }
 
-  private async connectPipe(onFrame: (frame: DecodedFrame) => void): Promise<void> {
+  private async connectPipe(
+    onFrame: (frame: DecodedFrame) => void,
+    onDebug: (message: string, level?: 'info' | 'warn' | 'error') => void
+  ): Promise<void> {
     const pipePath = `\\\\.\\pipe\\${this.pipeName}`
     const startedAt = Date.now()
+
+    // Diagnose-Counter für Frame-Protokoll-Fehler. Erste 3 Vorfälle pro Kind
+    // werden direkt geloggt; danach nur noch periodisch (alle 100), um das
+    // Debug-Log nicht mit duzenden identischen Einträgen zu fluten.
+    const protocolErrorCounters = new Map<ProtocolErrorKind, number>()
+    const protocolErrorFirstLogged = new Map<ProtocolErrorKind, boolean>()
+
+    const protocolErrorListener: ProtocolErrorListener = (kind, detail) => {
+      const count = (protocolErrorCounters.get(kind) ?? 0) + 1
+      protocolErrorCounters.set(kind, count)
+
+      const firstLogged = protocolErrorFirstLogged.get(kind) ?? false
+      const shouldLog = !firstLogged || count === 100 || count === 1000 || (count > 1000 && count % 1000 === 0)
+
+      if (!shouldLog) return
+
+      protocolErrorFirstLogged.set(kind, true)
+      onDebug(`Frame-Protokoll-Fehler (${kind}, count=${count}): ${detail}`, 'warn')
+    }
 
     await new Promise<void>((resolve, reject) => {
       const tryConnect = () => {
@@ -161,7 +183,7 @@ export class SidecarSession {
           this.pipe = socket
           socket.on('data', (chunk) => {
             const merged = Buffer.concat([Buffer.from(this.remainder), Buffer.from(chunk)])
-            const { frames, rest } = splitFrames(merged)
+            const { frames, rest } = splitFrames(merged, protocolErrorListener)
             this.remainder = Buffer.from(rest)
             for (const frame of frames) onFrame(frame)
           })

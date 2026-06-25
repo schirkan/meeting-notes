@@ -27,7 +27,11 @@ function crc32(buffer: Buffer): number {
   return (crc ^ 0xffffffff) >>> 0
 }
 
-export function decodeFrame(chunk: Buffer): DecodedFrame | null {
+export type ProtocolErrorKind = 'crc_mismatch' | 'unknown_source' | 'invalid_header' | 'magic_mismatch'
+
+export type ProtocolErrorListener = (kind: ProtocolErrorKind, detail: string, sourceHint?: TranscriptSource) => void
+
+export function decodeFrame(chunk: Buffer, onError?: ProtocolErrorListener): DecodedFrame | null {
   if (chunk.length < HEADER_SIZE) return null
 
   const magic = chunk.readUInt32LE(0)
@@ -42,13 +46,22 @@ export function decodeFrame(chunk: Buffer): DecodedFrame | null {
   const sequence = chunk.readBigInt64LE(24)
   const expectedCrc = chunk.readUInt32LE(32)
 
-  if (payloadLength < 0 || chunk.length < HEADER_SIZE + payloadLength) return null
+  if (payloadLength < 0 || chunk.length < HEADER_SIZE + payloadLength) {
+    onError?.('invalid_header', `payloadLength=${payloadLength}, available=${chunk.length - HEADER_SIZE}`)
+    return null
+  }
 
   const payload = chunk.subarray(HEADER_SIZE, HEADER_SIZE + payloadLength)
   const actualCrc = crc32(payload)
-  if (actualCrc !== expectedCrc) return null
+  if (actualCrc !== expectedCrc) {
+    onError?.('crc_mismatch', `expected=${expectedCrc.toString(16)}, actual=${actualCrc.toString(16)}, payloadLength=${payloadLength}`)
+    return null
+  }
 
   const source: TranscriptSource = sourceByte === 1 ? 'mic' : 'speaker'
+  if (sourceByte !== 1 && sourceByte !== 2) {
+    onError?.('unknown_source', `sourceByte=${sourceByte}, fallback='${source}'`)
+  }
 
   return {
     source,
@@ -61,20 +74,29 @@ export function decodeFrame(chunk: Buffer): DecodedFrame | null {
   }
 }
 
-export function splitFrames(buffer: Buffer): { frames: DecodedFrame[]; rest: Buffer } {
+export function splitFrames(
+  buffer: Buffer,
+  onError?: ProtocolErrorListener
+): { frames: DecodedFrame[]; rest: Buffer } {
   const frames: DecodedFrame[] = []
   let offset = 0
 
   while (offset + HEADER_SIZE <= buffer.length) {
     const magic = buffer.readUInt32LE(offset)
-    if (magic !== MAGIC) break
+    if (magic !== MAGIC) {
+      onError?.('magic_mismatch', `magic=0x${magic.toString(16)}, offset=${offset}`)
+      break
+    }
 
     const payloadLength = buffer.readInt32LE(offset + 12)
     const frameTotal = HEADER_SIZE + payloadLength
-    if (payloadLength < 0 || offset + frameTotal > buffer.length) break
+    if (payloadLength < 0 || offset + frameTotal > buffer.length) {
+      onError?.('invalid_header', `payloadLength=${payloadLength}, remaining=${buffer.length - offset - HEADER_SIZE}, offset=${offset}`)
+      break
+    }
 
     const frameBuffer = buffer.subarray(offset, offset + frameTotal)
-    const frame = decodeFrame(frameBuffer)
+    const frame = decodeFrame(frameBuffer, onError)
     if (!frame) break
 
     frames.push(frame)
