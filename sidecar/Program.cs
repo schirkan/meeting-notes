@@ -129,10 +129,22 @@ try
     LogInfo("format", "azure_target_format", $"Azure Target Format: {targetWaveFormat}");
     LogInfo("status", "capturing", "Mic + Speaker Loopback aktiv.");
 
+    var healthInterval = TimeSpan.FromSeconds(30);
+    var nextHealthLog = DateTime.UtcNow.Add(healthInterval);
+
     while (!cts.Token.IsCancellationRequested)
     {
-        await Task.Delay(1_000, cts.Token);
-        LogInfo("health", "alive", "ok");
+        try
+        {
+            await Task.Delay(TimeSpan.FromSeconds(1), cts.Token);
+        }
+        catch (OperationCanceledException) { break; }
+
+        if (DateTime.UtcNow >= nextHealthLog)
+        {
+            LogInfo("health", "alive", "ok");
+            nextHealthLog = DateTime.UtcNow.Add(healthInterval);
+        }
     }
 
     micCapture.StopRecording();
