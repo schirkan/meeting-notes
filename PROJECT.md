@@ -39,6 +39,17 @@
 - 24.06.2026: Debug-/Diagnostik erweitert: zusätzlicher IPC-Call zum Leeren des Debug-Logs (`transcript:clear-debug-log`), Debug-Panel mit eigenem „Log löschen“-Button sowie separaten Öffnen-/Schließen-Buttons; CSS-Transition am Debug-Toggle bereinigt.
 - 24.06.2026: Start-/Konfigurationsdiagnostik im Main-Prozess erweitert (aktive Geräteauflösung, Azure-Config-Summary ohne Secret-Leak, Sidecar-Startparameter, detaillierter Startfehler-Stack im Debug-Log) sowie Azure-Recognizer-Startfehler explizit als Laufzeitfehler ins UI durchgereicht.
 - 24.06.2026: Projektdokumentation für die Debug-Änderungen synchronisiert (`README.md`, `SPEC-v0.1.md`, `specs/T-300-*.md`, `specs/T-400-*.md`).
+- 25.06.2026: Projektanalyse (Audit) durchgeführt und 15 Probleme behoben (Commits `0a29cd9`–`a577ce3`):
+  - **Azure:** `interimResults` aus Fixed-Config endlich wirksam gemacht (`SpeechServiceResponse_InterimResults`).
+  - **Azure-Start:** neuer Promise-basierter `start(format)`-Pfad im Azure-Service, beide Recognizer (mic/speaker) werden explizit gestartet; bei Fehlschlag sauberes Rollback inkl. `status.running=false`.
+  - **Frame-Protokoll:** Rate-limited Diagnose-Logs für `crc_mismatch`, `unknown_source`, `magic_mismatch`, `invalid_header` (1. Eintrag + Counter-Logs bei 100/1000).
+  - **Sidecar/ConnectPipe:** Race-/Socket-Leak gefixt (`settled`-Flag + Timer-Cleanup); Health-Log auf 30s entschärft; `--sample-rate`-Arg wird explizit validiert (Range 8000–48000, sonst Exit 11/12).
+  - **UI:** Reset-Button stoppt jetzt laufende Aufnahme vor dem Leeren; Reset-Button-`disabled`-Predicate vereinfacht (`startedAtLabel === '---'` statt String-Remix); Escape-Handler + Focus-Trap + Initial-Fokus im Settings-Dialog.
+  - **UI/Transcript:** Auto-Scroll pausiert, sobald Nutzer ≥32px vom Listenende hochgescrollt hat, reaktiviert beim Zurückscrollen.
+  - **Settings:** ungültiger BCP-47-Sprachcode wird beim Speichern im Debug-Log als Warnung sichtbar gemacht (`validateUserSettings`).
+  - **Devtools:** `webContents.debugger` wird beim `destroyed`/`render-process-gone`-Event sauber detacht.
+  - **Build/Sidecar:** ungenutzte `bufferutil`/`utf-8-validate`-Externals entfernt (Bundle-Check bestätigt: keine Referenzen in main- oder SDK-Chunk); neues Skript `scripts/clean-sidecar.mjs` entfernt stale Target-Dirs in `sidecar/{bin,obj}` dynamisch aus dem csproj (statt hard-coded Liste), ist als Pre-Hook in `publish:sidecar` integriert.
+  - **Doku:** quartalsweiser Re-Evaluate-Termin (2026-09-25) für die Node-24.16+-Blockade in `TROUBLESHOOTING.md` ergänzt.
 
 ## Scope
 - Notizen aus Meetings sammeln
@@ -91,3 +102,4 @@
 - 24.06.2026, 14:19 UTC: Debug-UX angepasst: Floating-Button nur zum Öffnen, separates Schließen im geöffneten Panel, zusätzlicher „Log löschen“-Button mit UI-Toast; IPC (`transcript:clear-debug-log`) + Preload/Shared-Contract erweitert.
 - 24.06.2026, 14:19 UTC: Logging erweitert (Device-Resolution, Azure-Config-Metadaten inkl. Proxy-/Key-Länge, Sidecar-Startparameter, Stacktrace bei Startfehlern) und Azure-Recognizer-Start-Callbacks so ergänzt, dass Fehler nicht nur im Debug-Log erscheinen, sondern als `AZURE_RECOGNIZER_FAILED` ans UI gehen.
 - 24.06.2026, 14:26 UTC: Doku-Nachpflege zu den Debug-/Logging-Änderungen abgeschlossen (README-Featureliste, SPEC-v0.1 UI-Abschnitt, Specs T-300/T-400 Log ergänzt).
+- 25.06.2026, 12:50 UTC: Vollständiges Projekt-Audit durchgeführt (15 Probleme identifiziert); Lösungen in 15 Commits umgesetzt und einzeln committed (siehe Current Status oben). Verifikation: `npm run typecheck` und `npm run build` grün.
