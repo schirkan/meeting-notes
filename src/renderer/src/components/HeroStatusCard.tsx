@@ -14,7 +14,7 @@ type HeroStatusCardProps = {
   getSpeakerLabel: (speaker: string) => string
   onOpenSettingsDialog: () => void
   onToggleRecording: () => Promise<void>
-  onResetTranscript: () => void
+  onResetTranscript: () => Promise<void> | void
 }
 
 export function HeroStatusCard(props: HeroStatusCardProps) {
@@ -54,7 +54,7 @@ export function HeroStatusCard(props: HeroStatusCardProps) {
         >
           {status.running ? '■ Stop' : isStarting ? '◌ Startet ...' : '▶ Start'}
         </button>
-        <button className="ghost-button" type="button" onClick={onResetTranscript} disabled={finalCount === 0 && !startedAtLabel.trim().replace(/-/g, '')}>
+        <button className="ghost-button" type="button" onClick={() => void onResetTranscript()} disabled={finalCount === 0 && !startedAtLabel.trim().replace(/-/g, '')}>
           🗑 Löschen
         </button>
       </div>

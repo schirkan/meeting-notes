@@ -313,10 +313,22 @@ export function useAppState() {
     await onStart()
   }
 
-  const onResetTranscript = () => {
+  const onResetTranscript = async () => {
     const shouldReset = window.confirm('Transkript, Startzeit und Dauer wirklich zurücksetzen?')
     if (!shouldReset) {
       return
+    }
+
+    if (status.running) {
+      try {
+        const next = await window.transcriptApi.stop()
+        setStatus(next)
+      } catch (error) {
+        const message = error instanceof Error ? error.message : 'Stop fehlgeschlagen.'
+        setLastError({ code: 'UI_STOP_FAILED', message })
+        setToast({ message: `UI_STOP_FAILED: ${message}`, variant: 'error', persistent: true })
+        return
+      }
     }
 
     setSegments([])
