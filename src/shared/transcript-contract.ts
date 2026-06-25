@@ -139,6 +139,7 @@ export interface TranscriptApi {
     httpStatusText?: string
     latencyMs: number
     error?: string
+    steps: Array<{ step: string; status: 'ok' | 'warn' | 'error'; detail: string }>
   }>
   copyTranscript: (segments: TranscriptSegment[]) => Promise<void>
   onSegment: (cb: (segment: TranscriptSegment) => void) => () => void

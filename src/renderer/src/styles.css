@@ -544,6 +544,53 @@ label {
   word-break: break-all;
 }
 
+.connectivity-result-steps {
+  margin-top: 10px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  padding-top: 8px;
+}
+
+.connectivity-result-steps summary {
+  cursor: pointer;
+  font-size: 0.88em;
+  user-select: none;
+}
+
+.connectivity-result-step-list {
+  list-style: none;
+  padding: 0;
+  margin: 8px 0 0 0;
+  display: grid;
+  gap: 4px;
+}
+
+.connectivity-result-step {
+  display: grid;
+  grid-template-columns: 18px max-content 1fr;
+  align-items: baseline;
+  gap: 8px;
+  font-size: 0.86em;
+  line-height: 1.4;
+}
+
+.connectivity-result-step-icon {
+  font-weight: bold;
+  text-align: center;
+}
+
+.connectivity-result-step-ok .connectivity-result-step-icon { color: #2ea04c; }
+.connectivity-result-step-warn .connectivity-result-step-icon { color: #d8a740; }
+.connectivity-result-step-error .connectivity-result-step-icon { color: #dc5050; }
+
+.connectivity-result-step-name {
+  font-family: var(--mono-font, monospace);
+  opacity: 0.7;
+}
+
+.connectivity-result-step-detail {
+  word-break: break-word;
+}
+
 label {
   display: grid;
   gap: 6px;

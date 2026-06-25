@@ -9,6 +9,7 @@ type ConnectivityResult = {
   error?: string
   probeUrl?: string
   testedAtIso: string
+  steps: Array<{ step: string; status: 'ok' | 'warn' | 'error'; detail: string }>
 }
 
 type ConfigPanelProps = {
@@ -193,6 +194,23 @@ export function ConfigPanel(props: ConfigPanelProps) {
           <div className="connectivity-result-meta">
             Getestet um {formatTestedAt(connectivityResult.testedAtIso)} (lokale Zeit)
           </div>
+
+          {connectivityResult.steps && connectivityResult.steps.length > 0 && (
+            <details className="connectivity-result-steps" open={!connectivityResult.reachable}>
+              <summary>Diagnose-Schritte</summary>
+              <ul className="connectivity-result-step-list">
+                {connectivityResult.steps.map((step, index) => (
+                  <li key={`${step.step}-${index}`} className={`connectivity-result-step connectivity-result-step-${step.status}`}>
+                    <span className="connectivity-result-step-icon" aria-hidden="true">
+                      {step.status === 'ok' ? '✓' : step.status === 'warn' ? '⚠' : '✗'}
+                    </span>
+                    <span className="connectivity-result-step-name">{step.step}</span>
+                    <span className="connectivity-result-step-detail">{step.detail}</span>
+                  </li>
+                ))}
+              </ul>
+            </details>
+          )}
         </div>
       )}
 

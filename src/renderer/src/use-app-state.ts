@@ -395,6 +395,7 @@ export function useAppState() {
     error?: string
     probeUrl?: string
     testedAtIso: string
+    steps: Array<{ step: string; status: 'ok' | 'warn' | 'error'; detail: string }>
   } | null>(null)
   const [isTestingConnectivity, setIsTestingConnectivity] = useState(false)
 
@@ -410,7 +411,8 @@ export function useAppState() {
         latencyMs: result.latencyMs,
         error: result.error,
         probeUrl: result.probeUrl,
-        testedAtIso: new Date().toISOString()
+        testedAtIso: new Date().toISOString(),
+        steps: result.steps ?? []
       })
 
       if (result.reachable) {
@@ -421,8 +423,9 @@ export function useAppState() {
           persistent: false
         })
       } else {
+        const firstError = result.steps?.find((s) => s.status === 'error')?.detail
         setToast({
-          message: `Azure-Endpoint nicht erreichbar: ${result.error ?? 'unbekannter Fehler'}`,
+          message: `Azure-Endpoint nicht erreichbar: ${firstError ?? result.error ?? 'unbekannter Fehler'}`,
           variant: 'error',
           persistent: true
         })

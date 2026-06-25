@@ -10,7 +10,8 @@ import {
 } from '@shared/transcript-contract'
 import { type DecodedFrame } from './frame-protocol'
 import { SidecarSession, listSidecarDevices } from './sidecar-manager'
-import { AzureTranscriptionService, diagnoseEndpointReachability } from './azure-transcription-service'
+import { AzureTranscriptionService } from './azure-transcription-service'
+import { diagnoseEndpointReachability } from './azure-connectivity'
 import {
   getAzureConfigState,
   loadAzureConfig,

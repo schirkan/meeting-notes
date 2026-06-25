@@ -28,6 +28,7 @@ const api: TranscriptApi = {
       httpStatusText?: string
       latencyMs: number
       error?: string
+      steps: Array<{ step: string; status: 'ok' | 'warn' | 'error'; detail: string }>
     }>,
   copyTranscript: (segments) => ipcRenderer.invoke('transcript:copy', segments),
   onSegment: (cb) => {

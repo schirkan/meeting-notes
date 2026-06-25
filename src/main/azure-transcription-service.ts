@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto'
 import type { AzureConfig, UserSettings } from '@shared/config-contract'
 import type { TranscriptError, TranscriptSegment, TranscriptSource } from '@shared/transcript-contract'
 import type { DecodedFrame } from './frame-protocol'
+import { diagnoseEndpointReachability } from './azure-connectivity'
 
 type AzureSdk = typeof import('microsoft-cognitiveservices-speech-sdk')
 
@@ -511,78 +512,5 @@ export class AzureTranscriptionService {
     } catch {
       return undefined
     }
-  }
-}
-
-/**
- * Standalone-Funktion: prüft per HTTPS HEAD-Request, ob der konfigurierte Azure-
- * Endpoint erreichbar ist und der Speech-Key vom Server akzeptiert wird. Ohne
- * SDK-Init nutzbar, damit der Test-Button im Settings-Dialog auch ohne laufende
- * Transkription funktioniert.
- *
- * Rückgabe-Typ ist AzureConnectivityResult und enthält URL, HTTP-Status,
- * Status-Text, Latenz (ms) sowie ggf. eine Fehlermeldung.
- */
-export type AzureConnectivityResult = {
-  probeUrl: string
-  reachable: boolean
-  httpStatus?: number
-  httpStatusText?: string
-  latencyMs: number
-  error?: string
-}
-
-export async function diagnoseEndpointReachability(
-  azureConfig: AzureConfig,
-  onDebug?: (message: string, level?: 'info' | 'warn' | 'error') => void
-): Promise<AzureConnectivityResult> {
-  const endpoint = azureConfig.endpoint?.trim() ?? ''
-  if (!endpoint) {
-    const message = 'Endpoint-Diagnose: Kein Endpoint konfiguriert, übersprungen.'
-    onDebug?.(message, 'warn')
-    return {
-      probeUrl: '',
-      reachable: false,
-      latencyMs: 0,
-      error: message
-    }
-  }
-
-  let probeUrl = endpoint.replace(/^wss:\/\//i, 'https://').replace(/\/$/, '')
-  probeUrl = `${probeUrl}/speech/recognition/interactive/cognitiveservices/v1?language=de-DE`
-
-  const controller = new AbortController()
-  const timeout = setTimeout(() => controller.abort(), 5_000)
-  const start = Date.now()
-
-  try {
-    const response = await fetch(probeUrl, {
-      method: 'HEAD',
-      signal: controller.signal,
-      headers: { 'Ocp-Apim-Subscription-Key': azureConfig.speechKey }
-    })
-    const latencyMs = Date.now() - start
-    const message = `Endpoint-Diagnose: ${probeUrl} -> HTTP ${response.status} ${response.statusText} (${latencyMs} ms).`
-    onDebug?.(message)
-    return {
-      probeUrl,
-      reachable: true,
-      httpStatus: response.status,
-      httpStatusText: response.statusText,
-      latencyMs
-    }
-  } catch (error) {
-    const latencyMs = Date.now() - start
-    const errMessage = error instanceof Error ? error.message : String(error)
-    const message = `Endpoint-Diagnose: ${probeUrl} nicht erreichbar (${errMessage}, ${latencyMs} ms).`
-    onDebug?.(message, 'error')
-    return {
-      probeUrl,
-      reachable: false,
-      latencyMs,
-      error: errMessage
-    }
-  } finally {
-    clearTimeout(timeout)
   }
 }
