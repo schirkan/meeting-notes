@@ -176,10 +176,27 @@ export class SidecarSession {
     }
 
     await new Promise<void>((resolve, reject) => {
+      let retryTimer: NodeJS.Timeout | null = null
+      let settled = false
+
+      const cleanup = () => {
+        if (retryTimer) {
+          clearTimeout(retryTimer)
+          retryTimer = null
+        }
+      }
+
       const tryConnect = () => {
+        if (settled) return
         const socket = net.createConnection(pipePath)
 
         socket.once('connect', () => {
+          if (settled) {
+            socket.destroy()
+            return
+          }
+          settled = true
+          cleanup()
           this.pipe = socket
           socket.on('data', (chunk) => {
             const merged = Buffer.concat([Buffer.from(this.remainder), Buffer.from(chunk)])
@@ -193,11 +210,16 @@ export class SidecarSession {
 
         socket.once('error', () => {
           socket.destroy()
+          if (settled) return
+
           if (Date.now() - startedAt > 15_000) {
+            settled = true
+            cleanup()
             reject(new Error('Pipe-Verbindung zum Sidecar konnte nicht aufgebaut werden (Timeout).'))
             return
           }
-          setTimeout(tryConnect, 250)
+
+          retryTimer = setTimeout(tryConnect, 250)
         })
       }
 
