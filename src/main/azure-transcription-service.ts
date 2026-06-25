@@ -74,6 +74,25 @@ export class AzureTranscriptionService {
       `AzureTranscriptionService.init: Konfiguration aktiv (region=${this.azureConfig.region}, language=${this.settings.language}, diarizeInterim=true, lidMode=Continuous, interimResults=${this.azureConfig.interimResults}).`
     )
 
+    // Diagnose: die vom SDK intern aufgebaute WSS-URL zurücklesen, damit sichtbar
+    // wird, ob Endpoint + Region zu einer konsistenten URL zusammengesetzt wurden.
+    // (Bei Mismatch startet der Service zwar, kann aber nie eine Session öffnen.)
+    try {
+      const effectiveUrl = this.speechConfig.getProperty?.('SpeechServiceConnection_Url')
+      if (effectiveUrl) {
+        this.onDebug?.(`AzureTranscriptionService.init: Effektive Service-URL = ${effectiveUrl}`)
+      } else {
+        this.onDebug?.('AzureTranscriptionService.init: Konnte SpeechServiceConnection_Url nicht auslesen.', 'warn')
+      }
+    } catch (diagError) {
+      this.onDebug?.(`AzureTranscriptionService.init: URL-Diagnose fehlgeschlagen: ${diagError instanceof Error ? diagError.message : String(diagError)}`, 'warn')
+    }
+
+    // Diagnose: HTTPS-Erreichbarkeit des Endpoints prüfen. Schlägt das fehl,
+    // ist der Service-Start zwar erfolgreich (kein Azure-Auth-Fehler), die Session
+    // kommt aber nie zustande und es gibt keinen Canceled-Event.
+    await this.diagnoseEndpointReachability()
+
     if (this.azureConfig.proxy) {
       this.speechConfig.setProxy(
         this.azureConfig.proxy.host,
@@ -82,6 +101,43 @@ export class AzureTranscriptionService {
         this.azureConfig.proxy.password ?? ''
       )
       this.onDebug?.(`Azure Speech Proxy konfiguriert (${this.azureConfig.proxy.host}:${this.azureConfig.proxy.port}).`)
+    }
+  }
+
+  private async diagnoseEndpointReachability(): Promise<void> {
+    const endpoint = this.azureConfig.endpoint.trim()
+    if (!endpoint) {
+      this.onDebug?.('Endpoint-Diagnose: Kein Endpoint konfiguriert, übersprungen.', 'warn')
+      return
+    }
+
+    // HTTPS-Probe: holt nur die HTTP-Header (method=HEAD), bricht nach 5s ab.
+    // Ein 401/403/404 ist OK - das beweist, dass der Endpoint erreichbar ist
+    // und der Speech-Key/Pfad vom Server verarbeitet wird. Ein Timeout oder
+    // DNS-Fehler zeigt ein Netzwerk-Problem auf dem Zielsystem.
+    let probeUrl = endpoint.replace(/^wss:\/\//i, 'https://').replace(/\/$/, '')
+    probeUrl = `${probeUrl}/speech/recognition/interactive/cognitiveservices/v1?language=de-DE`
+
+    const controller = new AbortController()
+    const timeout = setTimeout(() => controller.abort(), 5_000)
+
+    try {
+      const response = await fetch(probeUrl, {
+        method: 'HEAD',
+        signal: controller.signal,
+        headers: { 'Ocp-Apim-Subscription-Key': this.azureConfig.speechKey }
+      })
+      this.onDebug?.(
+        `Endpoint-Diagnose: ${probeUrl} -> HTTP ${response.status} ${response.statusText}.`
+      )
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error)
+      this.onDebug?.(
+        `Endpoint-Diagnose: ${probeUrl} nicht erreichbar (${message}). Der Service-Start wird trotzdem versucht; falls keine Transcripts erscheinen, liegt ein Netzwerk-/DNS-/TLS-Problem auf dem Zielsystem vor.`,
+        'error'
+      )
+    } finally {
+      clearTimeout(timeout)
     }
   }
 
