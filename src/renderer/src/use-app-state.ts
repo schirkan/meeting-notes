@@ -51,6 +51,7 @@ export function useAppState() {
   const [speakerAliases, setSpeakerAliases] = useState<Record<string, string>>({})
   const [now, setNow] = useState(() => Date.now())
   const [sessionStartedAt, setSessionStartedAt] = useState<string | null>(null)
+  const [autoScrollEnabled, setAutoScrollEnabled] = useState(true)
   const transcriptListRef = useRef<HTMLUListElement>(null)
 
   useEffect(() => {
@@ -162,9 +163,29 @@ export function useAppState() {
   }, [])
 
   useEffect(() => {
-    if (!transcriptListRef.current) return
+    const list = transcriptListRef.current
+    if (!list) return
+
+    const handleScroll = () => {
+      // Auto-Scroll aktiv, solange der Nutzer maximal 32 px vom Listenende entfernt ist.
+      // Sobald hochgescrollt wird, wird Auto-Scroll deaktiviert.
+      const distanceFromBottom = list.scrollHeight - list.scrollTop - list.clientHeight
+      const nearBottom = distanceFromBottom <= 32
+      setAutoScrollEnabled(nearBottom)
+    }
+
+    list.addEventListener('scroll', handleScroll, { passive: true })
+    handleScroll()
+
+    return () => {
+      list.removeEventListener('scroll', handleScroll)
+    }
+  }, [])
+
+  useEffect(() => {
+    if (!autoScrollEnabled || !transcriptListRef.current) return
     transcriptListRef.current.scrollTop = transcriptListRef.current.scrollHeight
-  }, [segments])
+  }, [segments, autoScrollEnabled])
 
   useEffect(() => {
     if (!status.running || !status.startedAt) return
@@ -335,6 +356,7 @@ export function useAppState() {
     setSpeakerAliases({})
     setSessionStartedAt(null)
     setStatus((prev) => ({ ...prev, startedAt: undefined }))
+    setAutoScrollEnabled(true)
   }
 
   const onSaveSettings = async () => {
