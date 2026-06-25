@@ -54,7 +54,7 @@ export function HeroStatusCard(props: HeroStatusCardProps) {
         >
           {status.running ? '■ Stop' : isStarting ? '◌ Startet ...' : '▶ Start'}
         </button>
-        <button className="ghost-button" type="button" onClick={() => void onResetTranscript()} disabled={finalCount === 0 && !startedAtLabel.trim().replace(/-/g, '')}>
+        <button className="ghost-button" type="button" onClick={() => void onResetTranscript()} disabled={finalCount === 0 && startedAtLabel === '---'}>
           🗑 Löschen
         </button>
       </div>
