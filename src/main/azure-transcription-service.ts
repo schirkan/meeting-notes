@@ -49,6 +49,7 @@ export class AzureTranscriptionService {
   private streams = new Map<TranscriptSource, StreamState>()
   private missingSpeakerIdLogged = new Set<TranscriptSource>()
   private firstFrameLogged = new Set<TranscriptSource>()
+  private pushFrameCounters = new Map<TranscriptSource, { frames: number; bytes: number; lastReport: number }>()
 
   constructor(
     private readonly azureConfig: AzureConfig,
@@ -267,7 +268,38 @@ export class AzureTranscriptionService {
       }
 
       const state = this.ensureStreamForFrame(frame)
-      state.pushStream.write(frame.payload.buffer.slice(frame.payload.byteOffset, frame.payload.byteOffset + frame.payload.byteLength) as ArrayBuffer)
+
+      // Wichtig: einen *neuen* ArrayBuffer mit exakt payload.byteLength Bytes
+      // erzeugen. Azure-SDK kopiert den Wert intern und nutzt byteLength als
+      // Chunk-Größe. Würden wir den geteilten Backing-ArrayBuffer des Node-Pool-
+      // Buffers übergeben, wäre byteLength deutlich größer als die tatsächlichen
+      // Audio-Daten (Pool-Slots sind typisch 4–64 KB), und Azure würde Müll
+      // verarbeiten und stillschweigend keinen Audio-Start erkennen.
+      const payloadLength = frame.payload.byteLength
+      const isolatedBuffer = new ArrayBuffer(payloadLength)
+      new Uint8Array(isolatedBuffer).set(frame.payload)
+
+      state.pushStream.write(isolatedBuffer)
+
+      // Diagnose-Counter: alle 5 Sekunden wird gemeldet, wie viele Frames und
+      // Bytes pro Source an Azure durchgereicht wurden. Hilft zu erkennen,
+      // ob Frames zwar dekodiert aber nicht im PushStream landen.
+      const counter = this.pushFrameCounters.get(frame.source) ?? { frames: 0, bytes: 0, lastReport: Date.now() }
+      counter.frames += 1
+      counter.bytes += payloadLength
+
+      const now = Date.now()
+      if (now - counter.lastReport >= 5_000) {
+        const elapsedSec = (now - counter.lastReport) / 1000
+        const bytesPerSec = counter.bytes / elapsedSec
+        this.onDebug?.(
+          `pushFrame-Statistik (${frame.source}): ${counter.frames} Frames, ${counter.bytes} Bytes in ${elapsedSec.toFixed(1)}s (~${bytesPerSec.toFixed(0)} B/s).`
+        )
+        counter.frames = 0
+        counter.bytes = 0
+        counter.lastReport = now
+      }
+      this.pushFrameCounters.set(frame.source, counter)
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error)
       this.onDebug?.(`pushFrame Fehler (source=${frame.source}): ${message}`, 'error')
@@ -312,6 +344,7 @@ export class AzureTranscriptionService {
     this.streams.clear()
     this.missingSpeakerIdLogged.clear()
     this.firstFrameLogged.clear()
+    this.pushFrameCounters.clear()
     this.onDebug?.('AzureTranscriptionService.stop: alle Streams geschlossen.')
   }
 

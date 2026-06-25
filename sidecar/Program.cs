@@ -270,8 +270,15 @@ static void WriteFrame(Stream stream, byte source, int sampleRate, byte channels
     var crc = ComputeCrc32(payload);
     BitConverter.GetBytes(crc).CopyTo(header, 32);
 
-    stream.Write(header, 0, header.Length);
-    stream.Write(payload);
+    // Header und Payload in einem einzigen Write-Call absetzen, damit auf der
+    // Named Pipe (PipeTransmissionMode.Byte) kein DataAvailable-Event zwischen
+    // Header und Payload feuern kann. Sonst sieht der Reader einen Header-only
+    // Chunk, kann den Frame nicht zuordnen und verwirft ihn.
+    var combined = new byte[header.Length + payload.Length];
+    Buffer.BlockCopy(header, 0, combined, 0, header.Length);
+    payload.CopyTo(combined.AsSpan(header.Length));
+
+    stream.Write(combined, 0, combined.Length);
     stream.Flush();
 }
 
