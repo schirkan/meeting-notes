@@ -22,12 +22,38 @@ if (!argsMap.TryGetValue("--pipe-name", out var pipeName) || string.IsNullOrWhit
     return 10;
 }
 
-var sampleRate = argsMap.TryGetValue("--sample-rate", out var srRaw) && int.TryParse(srRaw, out var srParsed)
-    ? srParsed
-    : 16000;
+var sampleRate = 16000;
+if (argsMap.TryGetValue("--sample-rate", out var srRaw) && !string.IsNullOrWhiteSpace(srRaw))
+{
+    if (!int.TryParse(srRaw, out var srParsed) || srParsed <= 0)
+    {
+        LogError("SIDECAR_START_FAILED", $"Parameter --sample-rate ist ungültig: '{srRaw}'. Erwartet positive Ganzzahl.");
+        return 11;
+    }
+    if (srParsed < 8000 || srParsed > 48000)
+    {
+        LogError("SIDECAR_START_FAILED", $"Parameter --sample-rate={srParsed} außerhalb des unterstützten Bereichs (8000-48000).");
+        return 12;
+    }
+    sampleRate = srParsed;
+}
+else
+{
+    LogInfo("config", "sample_rate_default", $"--sample-rate nicht gesetzt, verwende Default {sampleRate} Hz.");
+}
 
 var micId = argsMap.GetValueOrDefault("--mic-device-id");
 var speakerId = argsMap.GetValueOrDefault("--speaker-device-id");
+
+if (!string.IsNullOrWhiteSpace(micId))
+{
+    LogInfo("config", "mic_device_id", $"--mic-device-id={micId}");
+}
+if (!string.IsNullOrWhiteSpace(speakerId))
+{
+    LogInfo("config", "speaker_device_id", $"--speaker-device-id={speakerId}");
+}
+
 var targetWaveFormat = new WaveFormat(sampleRate, 16, 1);
 
 var cts = new CancellationTokenSource();
