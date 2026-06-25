@@ -50,6 +50,36 @@
   - **Devtools:** `webContents.debugger` wird beim `destroyed`/`render-process-gone`-Event sauber detacht.
   - **Build/Sidecar:** ungenutzte `bufferutil`/`utf-8-validate`-Externals entfernt (Bundle-Check bestätigt: keine Referenzen in main- oder SDK-Chunk); neues Skript `scripts/clean-sidecar.mjs` entfernt stale Target-Dirs in `sidecar/{bin,obj}` dynamisch aus dem csproj (statt hard-coded Liste), ist als Pre-Hook in `publish:sidecar` integriert.
   - **Doku:** quartalsweiser Re-Evaluate-Termin (2026-09-25) für die Node-24.16+-Blockade in `TROUBLESHOOTING.md` ergänzt.
+- 25.06.2026: Audio-Transport-Stack gehärtet (Commits `b2b903a`, `5d90c63`, `79d2b11`, `b08c115`, `8ff1d5d`):
+  - **Frame-Protokoll:** Sidecar schreibt Header+Payload jetzt atomar in **einen** `stream.Write`-Call (eliminiert Pipe-Chunk-Splits auf `PipeTransmissionMode.Byte`); Renderer dekodiert 60-ms-Frames sauber.
+  - **Azure-PushStream:** `pushFrame` übergibt einen **frischen `ArrayBuffer` mit exakter Payload-Länge** statt des geteilten Node-Pool-Backing-Buffers (`byteLength` 4–64 KB Müll-Bytes) — Azure erkennt den Audio-Stream jetzt zuverlässig.
+  - **pushFrame-Statistik:** 5-Sekunden-Durchsatz-Log pro Source im Debug-Log, damit Audio-Ingestion-Regressionen sichtbar werden, auch wenn Azure still bleibt.
+  - **Effektive Service-URL + Endpoint-Diagnose:** neue `diagnoseEndpointReachability()`-Funktion mit gestaffelten Schritten (System-DNS → Fallback-DNS → TCP 443 → HTTPS-HEAD-Probe) wird sowohl in `init()` als auch über einen neuen UI-Button „Verbindung testen" aufgerufen.
+  - **Verbindung-testen-Button:** neuer IPC-Channel `transcript:test-azure-connectivity`, exponiert im Settings-Dialog unter Azure-Konfiguration. Result-Karte zeigt Status, HTTP-Code, Latenz, Probe-URL und aufklappbare Step-Liste mit DNS-/TCP-/HTTPS-Ergebnissen.
+  - **Diagnose-Refactor:** Connectivity-Funktionen aus `azure-transcription-service.ts` in eigenes Modul `src/main/azure-connectivity.ts` extrahiert (Test-Button funktioniert ohne SDK-Init).
+  - **UI-Focus-Fix:** Settings-Dialog zog Fokus bei jedem Re-Render zurück auf den Schließen-Button — Re-Render durch Tastendruck in Eingabefeldern riss den Fokus weg. Fix: zwei separate `useEffect`-Blöcke mit `[isOpen]`-Dependency; Initial-Fokus zielt jetzt auf erstes Eingabe-Element statt Close-Button; Tab/Escape-Handler lesen `onClose` via Ref.
+
+## Offene Probleme / Erkenntnisse
+
+### Audio-Transport funktioniert, Azure-SDK-Proxy ist totes Gleis (offen seit 25.06.2026)
+
+**Symptom:** Auf einem konkreten Zielsystem (ERGO-Corp-Domain, IPv4 192.168.178.21, px-Proxy `127.0.0.1:3128`) startet die App fehlerfrei, Audio-Frames erreichen den Azure-PushStream, aber es kommen keine Transcripts zurück. Auf einem anderen System ohne Proxy funktioniert die identische Konfiguration.
+
+**Root Cause (bestätigt durch Diagnose):** Die native Azure-Speech-SDK nutzt die per `setProxy()` gesetzten Proxy-Properties nicht für den ausgehenden WSS-Connect. Eine ausgehende Windows-Firewall blockt TCP 443 zu allen Azure-IPs (auch zur Default-Region-URL `swedencentral.stt.speech.microsoft.com`), `EACCES` auf `connect()`. Der px-Proxy selbst funktioniert (verifiziert per `curl -x http://127.0.0.1:3128` → `HTTP/1.1 200 Service Operational`), aber die SDK geht nicht durch ihn hindurch.
+
+**Diagnose-Werkzeug (seit 25.06.2026 im Settings-Dialog):** Verbindung-testen-Button → `src/main/azure-connectivity.ts` führt 4 Schritte aus (System-DNS, Fallback-DNS, TCP 443, HTTPS-HEAD) und zeigt Result-Karte mit allen Schritten.
+
+**Workarounds (nicht implementiert):**
+1. `netsh winhttp set proxy 127.0.0.1:3128` (systemweit, Admin-rechtig, außerhalb der App)
+2. `process.env.HTTPS_PROXY` / `process.env.NODE_EXTRA_CA_CERTS` vor SDK-Init setzen (Glückssache, native Module ignorieren Env-Vars oft)
+3. Eigenbau eines Azure-Speech-WSS-Clients in Node, der `https-proxy-agent` nutzt (verlieren Diarization + ein Teil der SDK-Features)
+
+**Status:** Doku und Diagnose sind fertig. App-seitige Implementierung eines Workarounds ist **bewusst zurückgestellt**, bis der Nutzer entscheidet, welche Variante umgesetzt werden soll. Siehe `specs/T-505-proxy-aware-azure-transport.md` für die geplante Spec.
+
+### Bekannte Nebensymptome (durch obiges Problem verursacht, dokumentiert)
+
+- Diagnose zeigt `DNS-System: ... -> 51.12.73.214 (26 ms)` (OK), gefolgt von `TCP-Connect ...:443 -> EACCES` → DNS ist nicht das Problem, aber Custom-Endpoint-Domain wird vom internen Corporate-DNS gefiltert (vgl. früherer `nslookup` → NXDOMAIN).
+- `https-proxy-agent` aus dem Node-Ökosystem wurde als möglicher Ersatz evaluiert, aber nicht eingebaut — siehe Workaround 3 oben.
 
 ## Scope
 - Notizen aus Meetings sammeln
@@ -103,3 +133,7 @@
 - 24.06.2026, 14:19 UTC: Logging erweitert (Device-Resolution, Azure-Config-Metadaten inkl. Proxy-/Key-Länge, Sidecar-Startparameter, Stacktrace bei Startfehlern) und Azure-Recognizer-Start-Callbacks so ergänzt, dass Fehler nicht nur im Debug-Log erscheinen, sondern als `AZURE_RECOGNIZER_FAILED` ans UI gehen.
 - 24.06.2026, 14:26 UTC: Doku-Nachpflege zu den Debug-/Logging-Änderungen abgeschlossen (README-Featureliste, SPEC-v0.1 UI-Abschnitt, Specs T-300/T-400 Log ergänzt).
 - 25.06.2026, 12:50 UTC: Vollständiges Projekt-Audit durchgeführt (15 Probleme identifiziert); Lösungen in 15 Commits umgesetzt und einzeln committed (siehe Current Status oben). Verifikation: `npm run typecheck` und `npm run build` grün.
+- 25.06.2026, 17:00 UTC: Audio-Transport-Stack-H�rtung (Commits 2b903a, 5d90c63, 79d2b11, 08c115, 8ff1d5d); Sidecar-Write-Atomisierung, Azure-PushStream-Isolation, neue Endpoint-Diagnose + Verbindung-testen-Button; Settings-Dialog Focus-Bug behoben. Verifikation: 
+pm run typecheck, 
+pm run build, 
+pm run dist:portable gr�n.

@@ -59,6 +59,25 @@ Ein portabler, unsignierter Desktop-PoC (Node.js + Electron + React), der parall
 - Optionaler Azure-Proxy über `proxy.host`, `proxy.port` sowie optional `proxy.username`/`proxy.password`
 - Kein vollwertiger Konfigurationseditor in der UI für den PoC
 - Legacy-Datei `config/azure.fixed.json` ist obsolet und nicht mehr Teil des Laufzeitpfads
+- **Verbindung testen**-Button in den Azure-Einstellungen: führt DNS-/TCP-/HTTPS-Diagnose gegen den konfigurierten Endpoint aus, Result-Karte zeigt alle Schritte und Fehlermeldungen. Modul `src/main/azure-connectivity.ts`, IPC-Channel `transcript:test-azure-connectivity`.
+
+## 6.1 Audioformat für Azure-Ingest (Implementierungsstand)
+- Sidecar resampelt Mic- und Speaker-Frames auf ein einheitliches Zielformat:
+  - 16 kHz
+  - 16-bit PCM
+  - mono
+- Ziel: kompatibler, stabiler Ingest-Pfad für Azure Speech bei heterogenen Geräteformaten.
+
+## 6.2 Audio-Transport (Implementierungsstand)
+- Sidecar schreibt Header (36 B) + Payload (~2 KB) in **einen** `Stream.Write`-Call, damit Named-Pipe-Chunks (`PipeTransmissionMode.Byte` + `PipeOptions.Asynchronous`) nicht zwischen Header und Payload trennen.
+- Renderer übergibt jeden dekodierten Audio-Frame als **frischen `ArrayBuffer` mit exakter Payload-Länge** an die Azure-PushStream-API. Vermeidet, dass die SDK den geteilten Node-Pool-Backing-Buffer (4–64 KB) als Chunk-Länge interpretiert.
+- 5-Sekunden-Durchsatz-Log (`pushFrame-Statistik`) pro Source, damit Ingestion-Regressionen sichtbar werden, auch wenn Azure still bleibt.
+
+## 6.3 Bekannte Netzwerk-Einschränkungen
+- Die native Azure-Speech-SDK (`microsoft-cognitiveservices-speech-sdk` 1.44.x) nutzt die per `setProxy()` gesetzten Proxy-Properties nicht zuverlässig für den ausgehenden WSS-Connect. In restriktiven Netzwerkumgebungen (z. B. mit erzwungenem HTTP-Proxy und ausgehender Firewall) kommt keine Verbindung zustande.
+- Diagnose-Hilfsmittel und Workarounds siehe `TROUBLESHOOTING.md` und `specs/T-505-proxy-aware-azure-transport.md`.
+
+## 7. Export
 
 ## 6.1 Audioformat für Azure-Ingest (Implementierungsstand)
 - Sidecar resampelt Mic- und Speaker-Frames auf ein einheitliches Zielformat:

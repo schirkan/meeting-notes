@@ -14,6 +14,7 @@ PoC zur strukturierten Erfassung von Meeting-Transkripten (Electron + React + C#
 - Azure Speech (Mic via SpeechRecognizer, Speaker via ConversationTranscriber)
 - Optionale Proxy-Konfiguration für Azure Speech (`proxy.host`/`proxy.port` + optional Auth)
 - Sidecar-Resampling auf Azure-kompatibles Zielformat (16 kHz, 16-bit, mono)
+- **Verbindung testen**-Button in den Azure-Einstellungen (DNS-/TCP-/HTTPS-Diagnose gegen den konfigurierten Endpoint)
 
 ## Voraussetzungen
 - Node gemäß `.nvmrc` (empfohlen: 22 LTS)
@@ -66,7 +67,15 @@ Der Portable-Build enthält das veröffentlichte Sidecar als zusätzliche Resour
 4. Bei Fehlercode `LOOPBACK_*`: Audio-Output/Device prüfen, danach erneut starten
 5. Finales Transkript über **TXT kopieren** exportieren
 
+### Fehlerbild: App startet, aber keine Transcripts erscheinen
+1. Debug-Log öffnen
+2. Push-Frame-Statistik prüfen: zeigt sie plausible Bytes/s (~32 000 B/s pro Quelle), kommen Audio-Daten an?
+3. Azure-Session-Events prüfen: gibt es `Session gestartet` / `Speech start erkannt` Events?
+4. Wenn ja fehlen: **Verbindung testen**-Button in den Azure-Einstellungen klicken → siehe `TROUBLESHOOTING.md` → „Azure / Netzwerk / Proxy"
+5. Finales Transkript über **TXT kopieren** exportieren
+
 ## Bekannte Einschränkungen
 - Die App benötigt gültige Azure-Konfiguration inklusive direkt hinterlegtem Speech-Key
 - Hardwarematrix (integriertes Mic + kabelgebundenes Headset) muss auf Zielgerät validiert werden
 - Der portable Build ist PoC-haft und unsigniert
+- **In restriktiven Netzwerkumgebungen mit ausgehender Firewall + erzwungenem HTTP-Proxy:** die native Azure-Speech-SDK nutzt die per `setProxy()` gesetzten Proxy-Properties nicht zuverlässig für den ausgehenden WSS-Connect. Diagnose und Workarounds siehe `TROUBLESHOOTING.md` und `specs/T-505-proxy-aware-azure-transport.md`.
