@@ -28,6 +28,9 @@ export function App() {
     onResetTranscript,
     onSaveConfig,
     onSaveSettings,
+    onTestConnectivity,
+    isTestingConnectivity,
+    connectivityResult,
     onToggleRecording,
     openDebugPanel,
     runtimeIssue,
@@ -116,6 +119,9 @@ export function App() {
           statusRunning={status.running}
           setConfigDraft={setConfigDraft}
           onSaveConfig={onSaveConfig}
+          onTestConnectivity={onTestConnectivity}
+          isTestingConnectivity={isTestingConnectivity}
+          connectivityResult={connectivityResult}
         />
       </SettingsDialog>
 

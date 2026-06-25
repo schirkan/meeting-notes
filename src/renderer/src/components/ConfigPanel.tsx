@@ -1,12 +1,25 @@
 import type { AzureConfigState } from '@shared/config-contract'
 import type { ConfigDraft } from '../config-utils'
 
+type ConnectivityResult = {
+  reachable: boolean
+  httpStatus?: number
+  httpStatusText?: string
+  latencyMs: number
+  error?: string
+  probeUrl?: string
+  testedAtIso: string
+}
+
 type ConfigPanelProps = {
   configState: AzureConfigState | null
   configDraft: ConfigDraft
   statusRunning: boolean
   setConfigDraft: React.Dispatch<React.SetStateAction<ConfigDraft>>
   onSaveConfig: () => Promise<void>
+  onTestConnectivity: () => Promise<void>
+  isTestingConnectivity: boolean
+  connectivityResult: ConnectivityResult | null
 }
 
 export function ConfigPanel(props: ConfigPanelProps) {
@@ -15,8 +28,18 @@ export function ConfigPanel(props: ConfigPanelProps) {
     configDraft,
     statusRunning,
     setConfigDraft,
-    onSaveConfig
+    onSaveConfig,
+    onTestConnectivity,
+    isTestingConnectivity,
+    connectivityResult
   } = props
+
+  const formatTestedAt = (iso: string) =>
+    new Date(iso).toLocaleString('de-DE', {
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit'
+    })
 
   return (
     <section className="panel settings">
@@ -126,9 +149,52 @@ export function ConfigPanel(props: ConfigPanelProps) {
         </label>
       </div>
 
-      <button className="primary-button settings-save-button" type="button" onClick={() => void onSaveConfig()} disabled={statusRunning}>
-        Azure-Konfiguration speichern
-      </button>
+      <div className="settings-action-row">
+        <button
+          className="primary-button settings-save-button"
+          type="button"
+          onClick={() => void onSaveConfig()}
+          disabled={statusRunning}
+        >
+          Azure-Konfiguration speichern
+        </button>
+        <button
+          className="secondary-button"
+          type="button"
+          onClick={() => void onTestConnectivity()}
+          disabled={isTestingConnectivity || !configDraft.endpoint || !configDraft.speechKey}
+          title="HTTPS-Probe gegen den konfigurierten Endpoint mit dem Speech Key"
+        >
+          {isTestingConnectivity ? 'Teste …' : 'Verbindung testen'}
+        </button>
+      </div>
+
+      {connectivityResult && (
+        <div
+          className={`connectivity-result ${connectivityResult.reachable ? 'connectivity-result-ok' : 'connectivity-result-error'}`}
+          role="status"
+        >
+          {connectivityResult.reachable ? (
+            <>
+              <strong>Erreichbar</strong> — HTTP {connectivityResult.httpStatus} {connectivityResult.httpStatusText} in {connectivityResult.latencyMs} ms
+              <div className="connectivity-result-meta">
+                {connectivityResult.probeUrl}
+              </div>
+            </>
+          ) : (
+            <>
+              <strong>Nicht erreichbar</strong> ({connectivityResult.latencyMs} ms)
+              <div className="connectivity-result-meta">{connectivityResult.error ?? 'Unbekannter Fehler'}</div>
+              {connectivityResult.probeUrl && (
+                <div className="connectivity-result-meta">{connectivityResult.probeUrl}</div>
+              )}
+            </>
+          )}
+          <div className="connectivity-result-meta">
+            Getestet um {formatTestedAt(connectivityResult.testedAtIso)} (lokale Zeit)
+          </div>
+        </div>
+      )}
 
       {configState?.path && <p className="meta-path">Pfad: {configState.path}</p>}
     </section>

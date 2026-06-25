@@ -10,7 +10,7 @@ import {
 } from '@shared/transcript-contract'
 import { type DecodedFrame } from './frame-protocol'
 import { SidecarSession, listSidecarDevices } from './sidecar-manager'
-import { AzureTranscriptionService } from './azure-transcription-service'
+import { AzureTranscriptionService, diagnoseEndpointReachability } from './azure-transcription-service'
 import {
   getAzureConfigState,
   loadAzureConfig,
@@ -18,7 +18,8 @@ import {
   saveAzureConfig,
   saveUserSettings
 } from './settings-store'
-import { validateUserSettings } from '@shared/config-contract'
+import { type AzureConfig, validateUserSettings } from '@shared/config-contract'
+import { draftToConfig, type ConfigDraft } from '../renderer/src/config-utils'
 
 const sidecarSession = new SidecarSession()
 
@@ -405,6 +406,34 @@ function registerIpc(): void {
       emitError({ code: 'SETTINGS_PERSIST_FAILED', message })
       throw error
     }
+  })
+
+  ipcMain.handle('transcript:test-azure-connectivity', async (_event, payload) => {
+    appendDebugLog('ipc', 'transcript:test-azure-connectivity aufgerufen.')
+
+    // Der Test darf auch mit ungespeicherten Draft-Werten funktionieren.
+    // Akzeptiert entweder eine AzureConfig oder einen ConfigDraft, der
+    // on-the-fly in eine AzureConfig übersetzt wird.
+    let configToTest: AzureConfig
+    try {
+      if (payload && typeof payload === 'object' && 'endpoint' in payload && 'useProxy' in payload) {
+        configToTest = draftToConfig(payload as ConfigDraft)
+      } else if (payload && typeof payload === 'object' && 'endpoint' in payload && 'region' in payload) {
+        configToTest = payload as AzureConfig
+      } else {
+        configToTest = await loadAzureConfig() ?? (await getAzureConfigState()).config as AzureConfig
+      }
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error)
+      emitError({ code: 'SETTINGS_PERSIST_FAILED', message })
+      throw error
+    }
+
+    if (!configToTest || !configToTest.endpoint) {
+      throw new Error('Keine Azure-Konfiguration zum Testen vorhanden.')
+    }
+
+    return diagnoseEndpointReachability(configToTest, (message, level) => appendDebugLog('main', message, level))
   })
 
   ipcMain.handle('transcript:save-settings', async (_event, payload) => {

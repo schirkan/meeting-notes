@@ -387,6 +387,54 @@ export function useAppState() {
     }
   }
 
+  const [connectivityResult, setConnectivityResult] = useState<{
+    reachable: boolean
+    httpStatus?: number
+    httpStatusText?: string
+    latencyMs: number
+    error?: string
+    probeUrl?: string
+    testedAtIso: string
+  } | null>(null)
+  const [isTestingConnectivity, setIsTestingConnectivity] = useState(false)
+
+  const onTestConnectivity = async () => {
+    setIsTestingConnectivity(true)
+    try {
+      // Aktuelle Draft-Werte (auch ungespeicherte Änderungen) testen.
+      const result = await window.transcriptApi.testAzureConnectivity(configDraft)
+      setConnectivityResult({
+        reachable: result.reachable,
+        httpStatus: result.httpStatus,
+        httpStatusText: result.httpStatusText,
+        latencyMs: result.latencyMs,
+        error: result.error,
+        probeUrl: result.probeUrl,
+        testedAtIso: new Date().toISOString()
+      })
+
+      if (result.reachable) {
+        const status = result.httpStatus ? `HTTP ${result.httpStatus} ${result.httpStatusText ?? ''}` : 'erreichbar'
+        setToast({
+          message: `Azure-Endpoint erreichbar (${status}, ${result.latencyMs} ms).`,
+          variant: 'info',
+          persistent: false
+        })
+      } else {
+        setToast({
+          message: `Azure-Endpoint nicht erreichbar: ${result.error ?? 'unbekannter Fehler'}`,
+          variant: 'error',
+          persistent: true
+        })
+      }
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Verbindungstest fehlgeschlagen.'
+      setToast({ message, variant: 'error', persistent: true })
+    } finally {
+      setIsTestingConnectivity(false)
+    }
+  }
+
   const onCopyTranscript = async () => {
     try {
       await window.transcriptApi.copyTranscript(segments)
@@ -453,6 +501,9 @@ export function useAppState() {
     onResetTranscript,
     onSaveConfig,
     onSaveSettings,
+    onTestConnectivity,
+    isTestingConnectivity,
+    connectivityResult,
     onToggleRecording,
     runtimeIssue,
     segments,

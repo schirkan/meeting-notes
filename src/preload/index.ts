@@ -20,6 +20,15 @@ const api: TranscriptApi = {
   getConfig: () => ipcRenderer.invoke('transcript:get-config') as Promise<AzureConfigState>,
   saveSettings: (settings) => ipcRenderer.invoke('transcript:save-settings', settings) as Promise<UserSettings>,
   saveConfig: (config) => ipcRenderer.invoke('transcript:save-config', config) as Promise<AzureConfigState>,
+  testAzureConnectivity: (payload?: unknown) =>
+    ipcRenderer.invoke('transcript:test-azure-connectivity', payload) as Promise<{
+      probeUrl: string
+      reachable: boolean
+      httpStatus?: number
+      httpStatusText?: string
+      latencyMs: number
+      error?: string
+    }>,
   copyTranscript: (segments) => ipcRenderer.invoke('transcript:copy', segments),
   onSegment: (cb) => {
     const listener = (_event: Electron.IpcRendererEvent, payload: TranscriptSegment) => cb(payload)

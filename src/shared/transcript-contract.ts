@@ -132,6 +132,14 @@ export interface TranscriptApi {
   getConfig: () => Promise<import('./config-contract').AzureConfigState>
   saveSettings: (settings: import('./config-contract').UserSettings) => Promise<import('./config-contract').UserSettings>
   saveConfig: (config: import('./config-contract').AzureConfig) => Promise<import('./config-contract').AzureConfigState>
+  testAzureConnectivity: (payload?: unknown) => Promise<{
+    probeUrl: string
+    reachable: boolean
+    httpStatus?: number
+    httpStatusText?: string
+    latencyMs: number
+    error?: string
+  }>
   copyTranscript: (segments: TranscriptSegment[]) => Promise<void>
   onSegment: (cb: (segment: TranscriptSegment) => void) => () => void
   onError: (cb: (error: TranscriptError) => void) => () => void
